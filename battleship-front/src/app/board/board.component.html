@@ -1,1 +1,7 @@
-<canvas #canvas class="canvas-board" width="1000" height="600"></canvas>
+<div class="board-container">
+  <canvas #canvas class="canvas-board" width="800" height="700"></canvas>
+
+  <div class="btn-set-game-container" *ngIf="!gameReady">
+    <button class="btn" (click)="ready()">Ready</button>
+  </div>
+</div>
