@@ -2,6 +2,7 @@ import { Component, OnInit, ElementRef, ViewChild } from "@angular/core";
 
 export interface Ship {
   active: boolean;
+  set: boolean;
   position: number[][];
 }
 
@@ -23,15 +24,16 @@ export class BoardComponent implements OnInit {
   private yourBoardY: number = 3 * this.tileSize;
 
   private colorShip: string = "#edae49";
-  private colorHitShip: string = "#d1495b";
   private colorGrayShip: string = "#a5a4a4";
   private colorGrayGrid: string = "#707070";
-  private colorRedGrid: string = "#d1495B";
+  private colorRed: string = "#d1495B";
 
   private shipList: Ship[] = [];
   private shipPartsAvailable: number;
   private isPlacingShip: boolean = false;
   private usedFields: number[][] = [];
+
+  private lightningImg: HTMLImageElement;
 
   ngOnInit(): void {
     this.canvas.nativeElement.addEventListener(
@@ -39,27 +41,25 @@ export class BoardComponent implements OnInit {
       this.handleClick.bind(this)
     );
     this.ctx = this.canvas.nativeElement.getContext("2d");
-    // this.canvas.nativeElement.onselectionchange = function () {
-    //   return false;
-    // };
+
     for (let i = 0; i < 5; i++) {
       let tempShip = {} as Ship;
       tempShip.active = false;
       tempShip.position = [];
+      tempShip.set = false;
       this.shipList.push(tempShip);
     }
 
+    this.lightningImg = new Image();
+    this.lightningImg.src = "../assets/images/lightning.png";
     this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
-    // this.drawBoard(
-    //   this.yourBoardX + 13 * this.tileSize,
-    //   this.yourBoardY,
-    //   "ENEMY"
-    // );
     this.drawShips(this.yourBoardX, this.yourBoardY);
   }
 
+  // Odkomentować warunek sprawdzający ustawienie wszystkich statków
   ready() {
     console.log("Game ready: " + this.gameReady);
+    // if (this.allShipSet()) {
     this.gameReady = true;
     this.canvas.nativeElement.width = 1008;
     this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
@@ -69,6 +69,32 @@ export class BoardComponent implements OnInit {
       this.yourBoardY,
       "ENEMY"
     );
+    // } else {
+    //   alert("You have to place all ships on board before starting game");
+    // }
+  }
+
+  reset() {
+    for (let i = 0; i < 5; i++) {
+      this.shipList[i].active = false;
+      this.shipList[i].position = [];
+      this.shipList[i].set = false;
+    }
+
+    this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
+    this.drawShips(this.yourBoardX, this.yourBoardY);
+    this.shipPartsAvailable = 0;
+    this.usedFields = [];
+    this.isPlacingShip = false;
+  }
+
+  allShipSet() {
+    for (let i = 0; i < 5; i++) {
+      if (!this.shipList[i].set) {
+        return false;
+      }
+    }
+    return true;
   }
 
   redrawPlacedShips() {
@@ -101,12 +127,18 @@ export class BoardComponent implements OnInit {
     const posx = pos.xPos;
     const posy = pos.yPos;
 
-    console.log("\n" + (posx + 1) + " " + (posy + 1));
-    this.checkIfShipClicked(posx, posy);
-    // console.log(this.isPlacingShip);
-    if (this.isPlacingShip) {
-      if (posx < 10 && posy < 10) {
-        this.placeShip(posx, posy);
+    console.log("\n" + posx + " " + posy);
+    if (!this.gameReady) {
+      this.checkIfShipClicked(posx, posy);
+      if (this.isPlacingShip) {
+        if (posx < 10 && posy < 10) {
+          this.placeShip(posx, posy);
+        }
+      }
+    } else {
+      if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
+        console.log("Clicked on enemy board");
+        this.fillHit(posx, posy, 0);
       }
     }
   }
@@ -114,11 +146,9 @@ export class BoardComponent implements OnInit {
   placeShip(xPos: number, yPos: number) {
     console.log("Dostępne elementy łodzi " + this.shipPartsAvailable);
     if (this.shipPartsAvailable > 0) {
-      // console.log(this.shipList.length);
       for (let i = 0; i < this.shipList.length; i++) {
         if (this.shipList[i].active) {
           console.log("Statek jest aktywny: " + i);
-          // console.log("Pole jest wolne " + this.isEmptyField(xPos, yPos));
           if (this.isEmptyField(xPos, yPos)) {
             let len = this.shipList[i].position.length;
             console.log("Długość list statku " + i + " : " + len);
@@ -126,10 +156,6 @@ export class BoardComponent implements OnInit {
               this.fillRectangle(xPos, yPos, this.colorGrayShip);
               this.shipList[i].position.push([xPos, yPos]);
               this.usedFields.push([xPos, yPos]);
-              // console.log(
-              //   "Ship: " + i + " position " + this.shipList[i].position
-              // );
-              // console.log("used fields " + this.usedFields);
               this.shipPartsAvailable--;
             } else if (len == 1) {
               if (
@@ -143,10 +169,6 @@ export class BoardComponent implements OnInit {
                 this.fillRectangle(xPos, yPos, this.colorGrayShip);
                 this.shipList[i].position.push([xPos, yPos]);
                 this.usedFields.push([xPos, yPos]);
-                // console.log(
-                //   "Ship: " + i + " position" + this.shipList[i].position
-                // );
-                // console.log("used fields " + this.usedFields);
                 this.shipPartsAvailable--;
               }
             } else {
@@ -154,14 +176,6 @@ export class BoardComponent implements OnInit {
                 this.shipList[i].position[0][0] ==
                 this.shipList[i].position[1][0]
               ) {
-                // console.log(
-                //   "W pionie " +
-                //     (xPos == this.shipList[i].position[0][0] &&
-                //       (yPos == this.shipList[i].position[0][1] - 1 ||
-                //         yPos == this.shipList[i].position[0][1] + 1 ||
-                //         yPos == this.shipList[i].position[len - 1][1] + 1 ||
-                //         yPos == this.shipList[i].position[len - 1][1] - 1))
-                // );
                 let tempYArray = [] as number[];
                 this.shipList[i].position.forEach((pos) => {
                   tempYArray.push(pos[1]);
@@ -177,24 +191,12 @@ export class BoardComponent implements OnInit {
                   this.fillRectangle(xPos, yPos, this.colorGrayShip);
                   this.shipList[i].position.push([xPos, yPos]);
                   this.usedFields.push([xPos, yPos]);
-                  // console.log(
-                  //   "Ship: " + i + " position" + this.shipList[i].position
-                  // );
-                  // console.log("used fields " + this.usedFields);
                   this.shipPartsAvailable--;
                 }
               } else if (
                 this.shipList[i].position[0][1] ==
                 this.shipList[i].position[1][1]
               ) {
-                // console.log(
-                //   "W poziomie " +
-                //     (yPos == this.shipList[i].position[0][1] &&
-                //       (xPos == this.shipList[i].position[0][0] - 1 ||
-                //         xPos == this.shipList[i].position[0][0] + 1 ||
-                //         xPos == this.shipList[i].position[len - 1][0] + 1 ||
-                //         xPos == this.shipList[i].position[len - 1][0] - 1))
-                // );
                 let tempXArray = [] as number[];
                 this.shipList[i].position.forEach((pos) => {
                   tempXArray.push(pos[0]);
@@ -210,10 +212,6 @@ export class BoardComponent implements OnInit {
                   this.fillRectangle(xPos, yPos, this.colorGrayShip);
                   this.shipList[i].position.push([xPos, yPos]);
                   this.usedFields.push([xPos, yPos]);
-                  // console.log(
-                  //   "Ship: " + i + " position" + this.shipList[i].position
-                  // );
-                  // console.log("used fields " + this.usedFields);
                   this.shipPartsAvailable--;
                 }
               }
@@ -223,6 +221,7 @@ export class BoardComponent implements OnInit {
               console.log("Koniec statku " + i);
               this.isPlacingShip = false;
               this.shipList[i].active = false;
+              this.shipList[i].set = true;
               this.shipList[i].position.forEach((pos) => {
                 this.fillRectangle(pos[0], pos[1], this.colorShip);
               });
@@ -320,7 +319,6 @@ export class BoardComponent implements OnInit {
               }
               break;
             }
-            // console.log("Is Valid: " + this.isValid(this.shipList[i].position));
             if (!this.isValid(this.shipList[i].position)) {
               this.resetShip(i);
               this.isPlacingShip = false;
@@ -526,7 +524,7 @@ export class BoardComponent implements OnInit {
           this.yourBoardY + 1 * this.tileSize,
           2,
           1,
-          this.colorRedGrid
+          this.colorRed
         );
         this.shipPartsAvailable = 2;
         this.shipList[0].active = true;
@@ -537,7 +535,7 @@ export class BoardComponent implements OnInit {
           this.yourBoardY + 3 * this.tileSize,
           3,
           1,
-          this.colorRedGrid
+          this.colorRed
         );
         this.shipList[1].active = true;
         this.isPlacingShip = true;
@@ -548,7 +546,7 @@ export class BoardComponent implements OnInit {
           this.yourBoardY + 5 * this.tileSize,
           3,
           1,
-          this.colorRedGrid
+          this.colorRed
         );
         this.shipList[2].active = true;
         this.shipPartsAvailable = 3;
@@ -559,7 +557,7 @@ export class BoardComponent implements OnInit {
           this.yourBoardY + 7 * this.tileSize,
           4,
           1,
-          this.colorRedGrid
+          this.colorRed
         );
         this.shipList[3].active = true;
         this.shipPartsAvailable = 4;
@@ -570,7 +568,7 @@ export class BoardComponent implements OnInit {
           this.yourBoardY + 9 * this.tileSize,
           5,
           1,
-          this.colorRedGrid
+          this.colorRed
         );
         this.shipList[4].active = true;
         this.shipPartsAvailable = 5;
@@ -635,37 +633,6 @@ export class BoardComponent implements OnInit {
       this.ctx.stroke();
     }
     this.ctx.closePath();
-  }
-
-  fillCustomGrid(
-    xPos: number,
-    yPos: number,
-    xSize: number,
-    ySize: number,
-    color: string
-  ) {
-    // console.log("fillGrid");
-    this.ctx.fillStyle = color;
-    for (let i = 0; i < xSize; i++) {
-      for (let j = 0; j < ySize; j++) {
-        this.ctx.fillRect(
-          xPos + i * this.tileSize + 2, //+ this.yourBoardX,
-          yPos + j * this.tileSize + 2, // + this.yourBoardY,
-          40,
-          40
-        );
-      }
-    }
-  }
-
-  fillRectangle(xPos: number, yPos: number, color: string) {
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(
-      xPos * this.tileSize + 2 + this.yourBoardX,
-      yPos * this.tileSize + 2 + this.yourBoardY,
-      40,
-      40
-    );
   }
 
   drawShips(xPos: number, yPos: number) {
@@ -745,43 +712,59 @@ export class BoardComponent implements OnInit {
       this.colorShip
     );
   }
+
+  fillCustomGrid(
+    xPos: number,
+    yPos: number,
+    xSize: number,
+    ySize: number,
+    color: string
+  ) {
+    this.ctx.fillStyle = color;
+    for (let i = 0; i < xSize; i++) {
+      for (let j = 0; j < ySize; j++) {
+        this.ctx.fillRect(
+          xPos + i * this.tileSize + 2,
+          yPos + j * this.tileSize + 2,
+          40,
+          40
+        );
+      }
+    }
+  }
+
+  // Funkcja odpowiedzialna za pokolorowanie pola po trafieniu == 1 / nietrafieniu == 0
+  fillHit(xPos: number, yPos: number, isHit: number) {
+    if (isHit == 1) {
+      this.fillRectangle(xPos, yPos, this.colorRed);
+      this.ctx.drawImage(
+        this.lightningImg,
+        xPos * this.tileSize + 12 + this.yourBoardX,
+        yPos * this.tileSize + 12 + this.yourBoardY
+      );
+    } else if (isHit == 0) {
+      console.log("Draw circle");
+      this.ctx.beginPath();
+      this.ctx.arc(
+        (xPos + 0.5) * this.tileSize + this.yourBoardX,
+        (yPos + 0.5) * this.tileSize + this.yourBoardY,
+        7.5,
+        0,
+        2 * Math.PI
+      );
+      this.ctx.fillStyle = "black";
+      this.ctx.fill();
+      this.ctx.closePath();
+    }
+  }
+
+  fillRectangle(xPos: number, yPos: number, color: string) {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(
+      xPos * this.tileSize + 2 + this.yourBoardX,
+      yPos * this.tileSize + 2 + this.yourBoardY,
+      40,
+      40
+    );
+  }
 }
-
-// export class Grid {
-//   constructor(private ctx: CanvasRenderingContext2D) {}
-
-//   drawGrid() {
-//     this.ctx.lineWidth = 2;
-
-//     // this.ctx.moveTo(1, 0);
-//     // this.ctx.lineTo(1, 421);
-//     // this.ctx.stroke();
-
-//     this.ctx.moveTo(421, 0);
-//     this.ctx.lineTo(421, 422);
-//     this.ctx.stroke();
-
-//     // this.ctx.moveTo(0, 1);
-//     // this.ctx.lineTo(421, 0);
-//     // this.ctx.stroke();
-
-//     this.ctx.moveTo(0, 421);
-//     this.ctx.lineTo(422, 421);
-//     this.ctx.stroke();
-
-//     for (let i = 1; i < 422; i = i + 42) {
-//       this.ctx.moveTo(i, 0);
-//       this.ctx.lineTo(i, 422);
-//       this.ctx.stroke();
-//     }
-
-//     for (let j = 1; j < 422; j = j + 42) {
-//       this.ctx.moveTo(0, j);
-//       this.ctx.lineTo(422, j);
-//       this.ctx.stroke();
-//     }
-
-//     this.ctx.fillStyle = "red";
-//     this.ctx.fillRect(2, 2, 40, 40);
-//   }
-// }

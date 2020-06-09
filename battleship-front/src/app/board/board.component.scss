@@ -1,5 +1,11 @@
 .board-container {
-  height: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-container {
+  // height: 550px;
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -8,8 +14,26 @@
 
 .btn-set-game-container {
   width: 208px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-ready {
+  margin-top: 100px !important;
 }
 
 .btn {
-  height: 50px;
+  height: 41px;
+  width: 121px;
+  margin: 23px 0;
+  font-size: 25px;
+  color: #ffffff;
+  background-color: #1c7293;
+  border: 0;
+}
+
+.btn:hover {
+  border: 2px solid #edae49;
 }

@@ -1,7 +1,12 @@
 <div class="board-container">
-  <canvas #canvas class="canvas-board" width="800" height="700"></canvas>
+  <div class="canvas-container">
+    <canvas #canvas class="canvas-board" width="800" height="600"></canvas>
 
-  <div class="btn-set-game-container" *ngIf="!gameReady">
-    <button class="btn" (click)="ready()">Ready</button>
+    <div class="btn-set-game-container" *ngIf="!gameReady">
+      <button class="btn-ready btn" (click)="ready()">READY</button>
+      <button class="btn" (click)="reset()">RESET</button>
+      <button class="btn">LEAVE</button>
+    </div>
   </div>
+  <button *ngIf="gameReady" class="btn-leave btn">LEAVE</button>
 </div>
