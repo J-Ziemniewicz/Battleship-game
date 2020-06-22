@@ -11,3 +11,17 @@
   height: 200px;
   align-self: center;
 }
+
+.btn {
+  height: 41px;
+  width: 121px;
+  margin: 23px 0;
+  font-size: 25px;
+  color: #ffffff;
+  background-color: #1c7293;
+  border: 0;
+}
+
+.btn:hover {
+  border: 2px solid #edae49;
+}

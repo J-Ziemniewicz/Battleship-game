@@ -43,7 +43,7 @@ export class BoardComponent implements OnInit {
     this.ctx = this.canvas.nativeElement.getContext("2d");
 
     for (let i = 0; i < 5; i++) {
-      let tempShip = {} as Ship;
+      const tempShip = {} as Ship;
       tempShip.active = false;
       tempShip.position = [];
       tempShip.set = false;

@@ -4,6 +4,10 @@ body {
   margin: 0;
 }
 
+html {
+  min-width: 1200px;
+}
+
 body * {
   font-family: "Sitka Small", sans-serif;
 }

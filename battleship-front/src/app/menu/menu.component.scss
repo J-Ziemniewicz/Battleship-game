@@ -1,0 +1,37 @@
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100vh;
+}
+
+.btn-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.img-logo {
+  height: 300px;
+  align-self: center;
+}
+
+.btn {
+  height: 90px;
+  width: 240px;
+  margin: 23px 0;
+  font-size: 40px;
+  color: #ffffff;
+  background-color: #1c7293;
+  border: 0;
+}
+
+.btn:hover {
+  border: 2px solid #edae49;
+}
+
+.small-fnt {
+  font-size: 25px;
+}

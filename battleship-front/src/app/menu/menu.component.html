@@ -1,0 +1,17 @@
+<div class="menu-container">
+    <img class="img-logo" #logo src="../assets/images/Battle Ship.png" alt="Battleship logo" />
+    <button class="btn" *ngIf="!chooseGame" (click)="startGame()">
+        START
+    </button>
+    <div class="btn-container" *ngIf="chooseGame">
+        <button class="btn small-fnt" routerLink="/game" routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }">
+            JOIN BATTLE
+        </button>
+        <button class="btn small-fnt" routerLink="/game" routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }">
+            CREATE <br />
+            NEW BATTLE
+        </button>
+    </div>
+</div>
