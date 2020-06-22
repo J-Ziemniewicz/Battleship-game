@@ -138,7 +138,7 @@ export class BoardComponent implements OnInit {
     } else {
       if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
         console.log("Clicked on enemy board");
-        this.fillHit(posx, posy, 0);
+        this.fillHit(posx, posy, 1);
       }
     }
   }
