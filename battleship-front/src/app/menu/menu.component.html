@@ -3,15 +3,25 @@
     <button class="btn" *ngIf="!chooseGame" (click)="startGame()">
         START
     </button>
-    <div class="btn-container" *ngIf="chooseGame">
-        <button class="btn small-fnt" routerLink="/game" routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }">
+    <div class="btn-container" *ngIf="chooseGame && !joinGame && !createGame">
+        <button class="btn small-fnt" (click)="renderJoinGame()">
             JOIN BATTLE
         </button>
-        <button class="btn small-fnt" routerLink="/game" routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }">
+        <button class="btn small-fnt" (click)="createNewGame()">
             CREATE <br />
             NEW BATTLE
+        </button>
+    </div>
+    <div class="new-game-container" *ngIf="chooseGame && !joinGame && createGame">
+        <p>YOUR GAME ID: {{gameId}}</p>
+        <p>Waiting for oponent...</p>
+    </div>
+    <div class="new-game-container horizontal" *ngIf="chooseGame && joinGame && !createGame">
+        <p>ENTER GAME ID:</p>
+        <input #gameIdInput class="game-id-input" autocomplete="off" pattern="\d{6}" maxlength="6" minlength="6"
+            required />
+        <button class="btn small-fnt small-btn" (click)="joinExistingGame()">
+            JOIN
         </button>
     </div>
 </div>

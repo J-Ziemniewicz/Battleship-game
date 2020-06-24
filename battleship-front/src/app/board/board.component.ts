@@ -1,4 +1,15 @@
-import { Component, OnInit, ElementRef, ViewChild } from "@angular/core";
+import {
+  Component,
+  OnInit,
+  ElementRef,
+  ViewChild,
+  Inject,
+} from "@angular/core";
+import { WebsocketService } from "../_services/websocket.service";
+import { Subject } from "rxjs";
+import { environment } from "src/environments/environment";
+import { ActivatedRoute } from "@angular/router";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 
 export interface Ship {
   active: boolean;
@@ -35,6 +46,27 @@ export class BoardComponent implements OnInit {
 
   private lightningImg: HTMLImageElement;
 
+  private wsConnection: Subject<any>;
+  private gameId = 0;
+
+  constructor(
+    private websocketConn: WebsocketService,
+    private router: ActivatedRoute // @Inject(MAT_DIALOG_DATA) public Id: number
+  ) {
+    this.wsConnection = this.websocketConn.connect(environment.wsEndpoint);
+    this.wsConnection.subscribe((msg) => {
+      console.log(msg);
+      const reader = new FileReader();
+      reader.onloadend = (e) => {
+        let text = reader.result as string;
+        const object = JSON.parse(text);
+        console.log(object);
+      };
+
+      reader.readAsText(msg.data);
+    });
+  }
+
   ngOnInit(): void {
     this.canvas.nativeElement.addEventListener(
       "click",
@@ -58,20 +90,20 @@ export class BoardComponent implements OnInit {
 
   // Odkomentować warunek sprawdzający ustawienie wszystkich statków
   ready() {
-    console.log("Game ready: " + this.gameReady);
-    // if (this.allShipSet()) {
-    this.gameReady = true;
-    this.canvas.nativeElement.width = 1008;
-    this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
-    this.redrawPlacedShips();
-    this.drawBoard(
-      this.yourBoardX + 13 * this.tileSize,
-      this.yourBoardY,
-      "ENEMY"
-    );
-    // } else {
-    //   alert("You have to place all ships on board before starting game");
-    // }
+    // console.log("Game ready: " + this.gameReady);
+    if (this.allShipSet()) {
+      this.gameReady = true;
+      this.canvas.nativeElement.width = 1008;
+      this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
+      this.redrawPlacedShips();
+      this.drawBoard(
+        this.yourBoardX + 13 * this.tileSize,
+        this.yourBoardY,
+        "ENEMY"
+      );
+    } else {
+      alert("You have to place all ships on board before starting game");
+    }
   }
 
   reset() {
@@ -127,7 +159,7 @@ export class BoardComponent implements OnInit {
     const posx = pos.xPos;
     const posy = pos.yPos;
 
-    console.log("\n" + posx + " " + posy);
+    // console.log("\n" + posx + " " + posy);
     if (!this.gameReady) {
       this.checkIfShipClicked(posx, posy);
       if (this.isPlacingShip) {
@@ -137,21 +169,21 @@ export class BoardComponent implements OnInit {
       }
     } else {
       if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
-        console.log("Clicked on enemy board");
+        // console.log("Clicked on enemy board");
         this.fillHit(posx, posy, 1);
       }
     }
   }
 
   placeShip(xPos: number, yPos: number) {
-    console.log("Dostępne elementy łodzi " + this.shipPartsAvailable);
+    // console.log("Dostępne elementy łodzi " + this.shipPartsAvailable);
     if (this.shipPartsAvailable > 0) {
       for (let i = 0; i < this.shipList.length; i++) {
         if (this.shipList[i].active) {
-          console.log("Statek jest aktywny: " + i);
+          // console.log("Statek jest aktywny: " + i);
           if (this.isEmptyField(xPos, yPos)) {
             let len = this.shipList[i].position.length;
-            console.log("Długość list statku " + i + " : " + len);
+            // console.log("Długość list statku " + i + " : " + len);
             if (len == 0) {
               this.fillRectangle(xPos, yPos, this.colorGrayShip);
               this.shipList[i].position.push([xPos, yPos]);
@@ -180,7 +212,7 @@ export class BoardComponent implements OnInit {
                 this.shipList[i].position.forEach((pos) => {
                   tempYArray.push(pos[1]);
                 });
-                console.log(tempYArray);
+                // console.log(tempYArray);
                 const yMax = Math.max(...tempYArray);
                 const yMin = Math.min(...tempYArray);
 
@@ -201,7 +233,7 @@ export class BoardComponent implements OnInit {
                 this.shipList[i].position.forEach((pos) => {
                   tempXArray.push(pos[0]);
                 });
-                console.log(tempXArray);
+                // console.log(tempXArray);
                 const xMax = Math.max(...tempXArray);
                 const xMin = Math.min(...tempXArray);
 
@@ -216,9 +248,9 @@ export class BoardComponent implements OnInit {
                 }
               }
             }
-            console.log("Pozostałe części " + this.shipPartsAvailable);
+            // console.log("Pozostałe części " + this.shipPartsAvailable);
             if (this.shipPartsAvailable == 0) {
-              console.log("Koniec statku " + i);
+              // console.log("Koniec statku " + i);
               this.isPlacingShip = false;
               this.shipList[i].active = false;
               this.shipList[i].set = true;
@@ -227,7 +259,7 @@ export class BoardComponent implements OnInit {
               });
               switch (i) {
                 case 0: {
-                  console.log(i);
+                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 1 * this.tileSize,
@@ -245,7 +277,7 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 1: {
-                  console.log(i);
+                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 3 * this.tileSize,
@@ -263,7 +295,7 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 2: {
-                  console.log(i);
+                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 5 * this.tileSize,
@@ -281,7 +313,7 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 3: {
-                  console.log(i);
+                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 7 * this.tileSize,
@@ -299,7 +331,7 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 4: {
-                  console.log(i);
+                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 9 * this.tileSize,
@@ -441,7 +473,7 @@ export class BoardComponent implements OnInit {
   }
 
   isValid(shipPos: number[][]) {
-    console.log("Validation ");
+    // console.log("Validation ");
     if (shipPos.length == 1) {
       if (
         this.isEmptyField(shipPos[0][0] + 1, shipPos[0][1]) ||
@@ -453,16 +485,16 @@ export class BoardComponent implements OnInit {
       }
     } else if (shipPos.length > 1) {
       if (shipPos[0][0] == shipPos[1][0]) {
-        console.log("Statek w pionie");
+        // console.log("Statek w pionie");
         let tempXArray = [] as number[];
         shipPos.forEach((pos) => {
           tempXArray.push(pos[1]);
         });
-        console.log(tempXArray);
+        // console.log(tempXArray);
         const yMax = Math.max(...tempXArray);
         const yMin = Math.min(...tempXArray);
-        console.log(shipPos);
-        console.log("yMax: " + yMax + " yMin: " + yMin);
+        // console.log(shipPos);
+        // console.log("yMax: " + yMax + " yMin: " + yMin);
         if (
           this.isEmptyField(shipPos[0][0], yMax + 1) ||
           this.isEmptyField(shipPos[0][0], yMin - 1)
@@ -474,11 +506,11 @@ export class BoardComponent implements OnInit {
         shipPos.forEach((pos) => {
           tempYArray.push(pos[0]);
         });
-        console.log(tempYArray);
+        // console.log(tempYArray);
         const xMax = Math.max(...tempYArray);
         const xMin = Math.min(...tempYArray);
-        console.log(shipPos);
-        console.log("xMax: " + xMax + " xMin: " + xMin);
+        // console.log(shipPos);
+        // console.log("xMax: " + xMax + " xMin: " + xMin);
         if (
           this.isEmptyField(xMax + 1, shipPos[0][1]) ||
           this.isEmptyField(xMin - 1, shipPos[0][1])
@@ -491,33 +523,33 @@ export class BoardComponent implements OnInit {
   }
 
   isEmptyField(xPos: number, yPos: number) {
-    console.log("Is empty point " + xPos + "," + yPos);
+    // console.log("Is empty point " + xPos + "," + yPos);
     for (let i = 0; i < this.usedFields.length; i++) {
       if (xPos == this.usedFields[i][0] && yPos == this.usedFields[i][1]) {
-        console.log(
-          "In usedField-> Position X: " +
-            xPos +
-            " Y: " +
-            yPos +
-            " Valid: " +
-            false
-        );
+        // console.log(
+        //   "In usedField-> Position X: " +
+        //     xPos +
+        //     " Y: " +
+        //     yPos +
+        //     " Valid: " +
+        //     false
+        // );
         return false;
       }
     }
     if (xPos < 0 || xPos > 9 || yPos < 0 || yPos > 9) {
-      console.log(
-        "Za planszą -> Position X: " + xPos + " Y: " + yPos + " Valid: " + false
-      );
+      // console.log(
+      //   "Za planszą -> Position X: " + xPos + " Y: " + yPos + " Valid: " + false
+      // );
       return false;
     }
-    console.log("Position X: " + xPos + " Y: " + yPos + " Valid: " + true);
+    // console.log("Position X: " + xPos + " Y: " + yPos + " Valid: " + true);
     return true;
   }
 
   checkIfShipClicked(xPos: number, yPos: number) {
     if (!this.isPlacingShip) {
-      console.log("position X: " + xPos + " Y: " + yPos);
+      // console.log("position X: " + xPos + " Y: " + yPos);
       if ((xPos == 12 || xPos == 13) && yPos == 1) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
@@ -743,7 +775,7 @@ export class BoardComponent implements OnInit {
         yPos * this.tileSize + 12 + this.yourBoardY
       );
     } else if (isHit == 0) {
-      console.log("Draw circle");
+      // console.log("Draw circle");
       this.ctx.beginPath();
       this.ctx.arc(
         (xPos + 0.5) * this.tileSize + this.yourBoardX,

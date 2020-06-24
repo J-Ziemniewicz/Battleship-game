@@ -9,13 +9,13 @@ const routes: Routes = [
     component: MenuComponent,
   },
   {
-    path: "game",
+    path: "battle/:id",
     component: BoardComponent,
   },
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { useHash: true })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

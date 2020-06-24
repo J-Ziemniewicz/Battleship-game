@@ -32,7 +32,7 @@ def createPlayerId():
         if playerId in activePlayers:
             continue
         break
-    print(playerId)
+    print("Player ID %s" % playerId)
     activePlayers.append(playerId)
     return playerId
 
@@ -64,13 +64,17 @@ class GameSession:
         self.__id = self.__createNewGame()
         self.__players = []
         self.__boards = {}
+        self.addPlayer(playerId)
+        gameList[self.__id]=self
 
     def addPlayer(self, playerId):
         if(len(self.__players) < 2):
             self.__players.append(playerId)
+            return 0
         else:
             print("to many players")
-        print(self.__players)
+            return 1
+        
 
     def setupBoard(self, playerId, posList):
         self.__boards[playerId] = Board()
@@ -92,6 +96,9 @@ class GameSession:
     def getGameId(self):
         return self.__id
 
+    def getPlayers(self):
+        return self.__players
+
     def checkHit(self, playerId, position):
         if(self.__boards[playerId].checkIfHit(position)):
             if(self.__boards[playerId].gameFinished()):
@@ -108,10 +115,12 @@ class Player(tornado.websocket.WebSocketHandler):
         self.__playerId = createPlayerId()
         print('new connection')
         currentPlayers[self.__playerId] = self
+        self.send_message({'type': 'playerId', 'id': self.__playerId})
 
     def on_message(self, message):
         dict_str = message.decode("UTF-8")
         incomingMsg = ast.literal_eval(dict_str)
+
         print(repr(incomingMsg))
         self.__parseMsgType(incomingMsg)
 
@@ -130,19 +139,34 @@ class Player(tornado.websocket.WebSocketHandler):
         return self.__playerId
 
     def __getOponentid(self, gameId: int, playerId: int):
-        for Id in self.__playerId:
+        print(gameId)
+        print(gameList[gameId].getPlayers())    
+        for Id in gameList[gameId].getPlayers():
             if Id != playerId:
                 return Id
         return 0
 
     def __parseMsgType(self, msg: dict):
+        print(gameList)
         if msg['type'] == 'newGame':
             newGame = GameSession(self.__playerId)
-            self.send_message({'type': 'newGame', 'gameId': newGame.getGameId})
+            self.send_message({'type': 'newGame', 'gameId': newGame.getGameId()})
+        elif msg['type'] == 'endGame': # TODO: dopisać wysyłanie wiadomości do drugiego gracza i zamykanie połączeń WS
+            activePlayers.remove(self.__playerId)
+            del(currentPlayers[self.__playerId])
+        elif msg['type'] == 'test':
+            self.send_message({'type': 'pong'})
         elif msg['type'] == 'joinGame':
-            joinGame = gameList[msg['gameId']]
-            joinGame.addPlayer(self.__playerId)
-            self.send_message({'type': 'joinGame', 'result': 'success'})
+            try:
+                if(gameList[msg['gameId']].addPlayer(self.__playerId)):
+                    self.send_message({'type': 'joinGame', 'result': 1})
+                else:
+                    self.send_message({'type': 'joinGame', 'result': 0})
+                    oponentId = self.__getOponentid(msg['gameId'], self.__playerId)
+                    currentPlayers[oponentId].send_message(
+                        {'type': 'joinGame', 'result': 0})
+            except KeyError:
+                    self.send_message({'type': 'joinGame', 'result': 1})
         elif msg['type'] == 'shipSetup':
             if(gameList[msg['gameId']].setupBoard(self.__playerId, msg['shipPos'])):
                 for playerId in self.__playerId:
