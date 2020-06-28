@@ -121,6 +121,7 @@ export class MenuComponent implements OnInit {
 
   createNewGame() {
     const msg = this.createMessage("newGame");
+    this.gameSession.setGameId(this.gameId);
     this.wsConnection.next(msg);
   }
 
@@ -134,6 +135,7 @@ export class MenuComponent implements OnInit {
     const msg = this.createMessage("joinGame");
     if (msg.gameId >= 100000 && msg.gameId <= 999999) {
       console.log(msg);
+      this.gameSession.setGameId(this.gameId);
       this.wsConnection.next(msg);
     } else {
       alert("Please enter correct game ID");

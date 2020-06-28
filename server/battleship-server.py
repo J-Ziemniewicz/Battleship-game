@@ -191,18 +191,18 @@ class Player(tornado.websocket.WebSocketHandler):
                 self.send_message({'type': 'joinGame', 'result': 1})
         elif msg['type'] == 'shipSetup':
             if(gameList[int(msg['gameId'])].setupBoard(self.__playerId, msg['shipPos'])):
-                self.send_message({'type': 'gameReady','yourTurn' : True,'playerId':self.__playerId})
+                self.send_message({'type': 'gameReady','yourTurn' : True})
                 oponentId = self.__getOponentid(int(msg['gameId']), self.__playerId)
                 currentPlayers[oponentId].send_message(
-                        {'type': 'gameReady','yourTurn' : False,'playerId':oponentId})
+                        {'type': 'gameReady','yourTurn' : False})
                         
         elif msg['type'] == 'sendTorpedo':
-            oponentId = self.__getOponentid(int(msg['gameId']), int(msg['playerId']))
+            oponentId = self.__getOponentid(int(msg['gameId']), self.__playerId)
             if(oponentId != 0):
                 hitResult = gameList[int(msg['gameId'])].checkHit(
                     oponentId, msg['torpedoPos'])
                 if(hitResult == 2):
-                    currentPlayers[int(msg['playerId'])].send_message(
+                    currentPlayers[self.__playerId].send_message(
                         {'type': 'gameEnd', 'result': 'won','position': msg['torpedoPos'],'board': 1,'hit':1})
                     currentPlayers[oponentId].send_message(
                         {'type': 'gameEnd', 'result': 'lost','position': msg['torpedoPos'],'board': 0,'hit':1})

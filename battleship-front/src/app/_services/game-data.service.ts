@@ -20,6 +20,7 @@ export interface IBoardState {
 }
 
 export interface IGameState {
+  gameId: number;
   gameReady: boolean;
   waitingForEnemy: boolean;
   shipList?: IShip[];
@@ -39,10 +40,10 @@ export class GameDataService {
 
   constructor() {
     this.initService();
-    console.log("Initialize gameDataService");
-    console.log(this.menuComponentState);
-    console.log(this.boardComponentState);
-    console.log(this.boardState);
+    // console.log("Initialize gameDataService");
+    // console.log(this.menuComponentState);
+    // console.log(this.boardComponentState);
+    // console.log(this.boardState);
     if (sessionStorage.getItem("menuState") !== null) {
       this.menuComponentState = JSON.parse(
         sessionStorage.getItem("menuState")
@@ -62,7 +63,11 @@ export class GameDataService {
   }
 
   private initService() {
-    this.boardComponentState = { gameReady: false, waitingForEnemy: false };
+    this.boardComponentState = {
+      gameReady: false,
+      waitingForEnemy: false,
+      gameId: 0,
+    };
     this.menuComponentState = {
       chooseGame: false,
       createGame: false,
@@ -82,7 +87,7 @@ export class GameDataService {
         this.boardState.yourBoard[i][j] = -1;
       }
     }
-    console.log(this.boardState);
+    // console.log(this.boardState);
   }
 
   // Reset service data after end/leave game
@@ -92,6 +97,10 @@ export class GameDataService {
     sessionStorage.removeItem("menuState");
     sessionStorage.removeItem("boardCompState");
     sessionStorage.removeItem("boardState");
+  }
+
+  public resetMenu() {
+    sessionStorage.removeItem("menuState");
   }
   // Menu Component State
 
@@ -121,10 +130,19 @@ export class GameDataService {
 
   public setGameId(id: number) {
     this.menuComponentState.gameId = id;
+    this.boardComponentState.gameId = id;
+    sessionStorage.setItem(
+      "boardCompState",
+      JSON.stringify(this.boardComponentState)
+    );
     sessionStorage.setItem(
       "menuState",
       JSON.stringify(this.menuComponentState)
     );
+  }
+
+  public getGameId() {
+    return this.boardComponentState.gameId;
   }
 
   public getMenuState() {
@@ -170,7 +188,7 @@ export class GameDataService {
     console.log(this.boardState);
     switch (board) {
       case 0: {
-        // this.boardState.yourBoard[pos[0]][pos[1]] = torpedo;
+        this.boardState.yourBoard[pos[0]][pos[1]] = torpedo;
         console.log(this.boardState.yourBoard);
         break;
       }

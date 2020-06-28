@@ -33,9 +33,10 @@ export class BoardComponent implements OnInit {
   @ViewChild("canvas", { static: true })
   canvas: ElementRef<HTMLCanvasElement>;
 
-  public gameReady: boolean = false;
-  public yourTurn: boolean = false;
-  private waitingForEnemy: boolean = true;
+  public gameReady: boolean;
+  public yourTurn: boolean;
+  private waitingForEnemy: boolean;
+  private imageLoaded: boolean;
 
   private ctx: CanvasRenderingContext2D;
 
@@ -83,12 +84,18 @@ export class BoardComponent implements OnInit {
       reader.readAsText(msg.data);
     });
     this.playerId = this.websocketConn.getConnId();
+    this.imageLoaded = false;
+    this.gameSession.resetMenu();
   }
 
   ngOnInit(): void {
-    this.initCanvas();
     this.gameId = this.activatedRouter.snapshot.params.id;
+    this.initCanvas();
     this.loadGameState();
+    if (!this.imageLoaded) {
+      this.lightningImg = new Image();
+      this.lightningImg.src = "../assets/images/lightning.png";
+    }
   }
 
   private loadGameState() {
@@ -106,19 +113,29 @@ export class BoardComponent implements OnInit {
       });
       this.redrawPlacedShips();
     } else if (this.gameReady) {
-      this.shipList = gameState.shipList;
-      this.drawTwoBoards();
-      this.changeTurn(gameState.boards.yourTurn);
-      for (let i = 0; i < 10; i++) {
-        for (let j = 0; j < 10; j++) {
-          this.fillHit(i, j, gameState.boards.yourBoard[i][j]);
-          this.fillHit(i + 13, j, gameState.boards.enemyBoard[i][j]);
+      this.lightningImg = new Image();
+      console.log("Init lightningBolt");
+      this.lightningImg.onload = () => {
+        this.shipList = gameState.shipList;
+        this.drawTwoBoards();
+        this.changeTurn(gameState.boards.yourTurn);
+        for (let i = 0; i < 10; i++) {
+          for (let j = 0; j < 10; j++) {
+            this.fillHit(i, j, gameState.boards.yourBoard[i][j]);
+            this.fillHit(i + 13, j, gameState.boards.enemyBoard[i][j]);
+          }
         }
-      }
+        this.imageLoaded = true;
+      };
+
+      this.lightningImg.src = "../assets/images/lightning.png";
+
+      console.log("lightningBolt src " + this.lightningImg.src);
     }
   }
 
   private initCanvas() {
+    console.log("InitCanvas");
     this.canvas.nativeElement.addEventListener(
       "click",
       this.handleClick.bind(this)
@@ -133,8 +150,6 @@ export class BoardComponent implements OnInit {
       this.shipList.push(tempShip);
     }
 
-    this.lightningImg = new Image();
-    this.lightningImg.src = "../assets/images/lightning.png";
     this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
     this.drawShips(this.yourBoardX, this.yourBoardY);
   }
@@ -148,7 +163,6 @@ export class BoardComponent implements OnInit {
             const newMsg = this.createMessage("playerId", undefined, connId);
             this.wsConnection.next(newMsg);
             // console.log(msg["playerId"]);
-            this.playerId = msg["playerId"];
           }
         }
         break;
@@ -167,7 +181,7 @@ export class BoardComponent implements OnInit {
       case "gameReady": {
         this.dialogRef.close();
         console.log("Your turn " + msg["yourTurn"]);
-        this.playerId = msg["playerId"];
+        // this.playerId = msg["playerId"];
         this.drawTwoBoards();
         this.changeTurn(msg["yourTurn"]);
         this.gameReady = true;
@@ -184,11 +198,11 @@ export class BoardComponent implements OnInit {
         break;
       }
       case "torpedo": {
-        let pos = msg["position"];
         if (msg["board"] == 1) {
-          pos[0] = pos[0] + 13;
+          this.fillHit(msg["position"][0] + 13, msg["position"][1], msg["hit"]);
+        } else {
+          this.fillHit(msg["position"][0], msg["position"][1], msg["hit"]);
         }
-        this.fillHit(pos[0], pos[1], msg["hit"]);
         this.gameSession.updateBoard(
           msg["board"],
           msg["position"],
@@ -764,7 +778,7 @@ export class BoardComponent implements OnInit {
   private checkIfShipClicked(xPos: number, yPos: number) {
     if (!this.isPlacingShip) {
       // console.log("position X: " + xPos + " Y: " + yPos);
-      if ((xPos == 12 || xPos == 13) && yPos == 1) {
+      if ((xPos == 12 || xPos == 13) && yPos == 1 && !this.shipList[0].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
           this.yourBoardY + 1 * this.tileSize,
@@ -775,7 +789,7 @@ export class BoardComponent implements OnInit {
         this.shipPartsAvailable = 2;
         this.shipList[0].active = true;
         this.isPlacingShip = true;
-      } else if (xPos > 11 && xPos < 15 && yPos == 3) {
+      } else if (xPos > 11 && xPos < 15 && yPos == 3 && !this.shipList[1].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
           this.yourBoardY + 3 * this.tileSize,
@@ -786,7 +800,7 @@ export class BoardComponent implements OnInit {
         this.shipList[1].active = true;
         this.isPlacingShip = true;
         this.shipPartsAvailable = 3;
-      } else if (xPos > 11 && xPos < 15 && yPos == 5) {
+      } else if (xPos > 11 && xPos < 15 && yPos == 5 && !this.shipList[2].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
           this.yourBoardY + 5 * this.tileSize,
@@ -797,7 +811,7 @@ export class BoardComponent implements OnInit {
         this.shipList[2].active = true;
         this.shipPartsAvailable = 3;
         this.isPlacingShip = true;
-      } else if (xPos > 11 && xPos < 16 && yPos == 7) {
+      } else if (xPos > 11 && xPos < 16 && yPos == 7 && !this.shipList[3].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
           this.yourBoardY + 7 * this.tileSize,
@@ -808,7 +822,7 @@ export class BoardComponent implements OnInit {
         this.shipList[3].active = true;
         this.shipPartsAvailable = 4;
         this.isPlacingShip = true;
-      } else if (xPos > 11 && xPos < 17 && yPos == 9) {
+      } else if (xPos > 11 && xPos < 17 && yPos == 9 && !this.shipList[4].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
           this.yourBoardY + 9 * this.tileSize,
@@ -977,6 +991,7 @@ export class BoardComponent implements OnInit {
   private fillHit(xPos: number, yPos: number, isHit: number) {
     if (isHit == 1) {
       this.fillRectangle(xPos, yPos, this.colorRed);
+      console.log("draw lightningbolt");
       this.ctx.drawImage(
         this.lightningImg,
         xPos * this.tileSize + 12 + this.yourBoardX,
