@@ -191,7 +191,7 @@ export class BoardComponent implements OnInit {
         this.fillHit(pos[0], pos[1], msg["hit"]);
         this.gameSession.updateBoard(
           msg["board"],
-          pos,
+          msg["position"],
           msg["hit"],
           msg["yourTurn"]
         );
