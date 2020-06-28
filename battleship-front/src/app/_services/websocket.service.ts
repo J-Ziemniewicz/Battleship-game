@@ -1,12 +1,17 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { Observable, Subject, Observer } from "rxjs";
 
 @Injectable({
   providedIn: "root",
 })
 export class WebsocketService {
-  constructor() {}
+  constructor() {
+    if (sessionStorage.getItem("playerId") !== null) {
+      this.connId = parseInt(sessionStorage.getItem("playerId"), 10);
+    }
+  }
 
+  private connId: number = 0;
   private subject: Subject<MessageEvent>;
 
   public connect(url): Subject<MessageEvent> {
@@ -24,6 +29,11 @@ export class WebsocketService {
       ws.onmessage = obs.next.bind(obs);
       ws.onerror = obs.error.bind(obs);
       ws.onclose = obs.complete.bind(obs);
+      ws.onclose = () => {
+        console.log("trying to reconnect");
+        this.subject = null;
+        this.connect(url);
+      };
       return ws.close.bind(ws);
     });
     let observer = {
@@ -36,5 +46,16 @@ export class WebsocketService {
       },
     };
     return Subject.create(observer, observable);
+  }
+
+  public setConnId(id: number) {
+    this.connId = id;
+    console.log("addidng player Id " + this.connId);
+    sessionStorage.setItem("playerId", id.toString());
+  }
+
+  public getConnId() {
+    console.log("Played id in websocketService " + this.connId);
+    return this.connId;
   }
 }

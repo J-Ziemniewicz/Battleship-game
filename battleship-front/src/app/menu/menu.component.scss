@@ -1,6 +1,7 @@
 :host {
   display: block;
   height: 100vh;
+  position: relative;
 }
 
 .menu-container {
@@ -35,6 +36,16 @@
 
 .btn:hover {
   border: 2px solid #edae49;
+}
+
+.btn-leave {
+  position: absolute;
+  height: 41px;
+  width: 121px;
+  right: 0;
+  bottom: 0;
+  margin: 20px 40px 30px 20px;
+  font-size: 25px;
 }
 
 .small-fnt {

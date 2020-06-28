@@ -13,6 +13,7 @@ import numpy as np
 gameList = {}
 currentPlayers = {}
 activePlayers = []
+playersInGame = []
 
 
 def createNewGame():
@@ -40,14 +41,16 @@ def createPlayerId():
 class Board:
     def __init__(self):
         self.__hitcount = 17
-        self.__board = np.zeros(10, 10)
+        self.__board = np.zeros((10, 10),dtype=np.int)
 
     def setShips(self, posList):
         for pos in posList:
             self.__board[pos[0], pos[1]] = 1
+        print(self.__board)
 
     def checkIfHit(self, position):
         if self.__board[position[0], position[1]] == 1:
+            self.__hitcount = self.__hitcount-1
             return True
         else:
             return False
@@ -80,7 +83,7 @@ class GameSession:
         self.__boards[playerId] = Board()
         self.__boards[playerId].setShips(posList)
         if(len(self.__boards) == 2):
-            print(self.__boards)
+            # print(self.__boards)
             return True
         return False
 
@@ -111,23 +114,27 @@ class GameSession:
 
 class Player(tornado.websocket.WebSocketHandler):
 
+    
+
     def open(self):
-        self.__playerId = createPlayerId()
         print('new connection')
+        self.__playerId = createPlayerId()
         currentPlayers[self.__playerId] = self
-        self.send_message({'type': 'playerId', 'id': self.__playerId})
+        self.send_message({'type': 'playerId', 'playerId': self.__playerId})
 
     def on_message(self, message):
         dict_str = message.decode("UTF-8")
+        print(dict_str)
         incomingMsg = ast.literal_eval(dict_str)
 
         print(repr(incomingMsg))
         self.__parseMsgType(incomingMsg)
 
     def on_close(self):
+        # playersInGame.remove(self.__playerId)
         activePlayers.remove(self.__playerId)
         del(currentPlayers[self.__playerId])
-        print('connection closed')
+        print('Player %d closed  connection' % self.__playerId)
 
     def check_origin(self, origin):
         return True
@@ -139,54 +146,74 @@ class Player(tornado.websocket.WebSocketHandler):
         return self.__playerId
 
     def __getOponentid(self, gameId: int, playerId: int):
-        print(gameId)
-        print(gameList[gameId].getPlayers())    
+   
         for Id in gameList[gameId].getPlayers():
             if Id != playerId:
                 return Id
         return 0
 
     def __parseMsgType(self, msg: dict):
-        print(gameList)
-        if msg['type'] == 'newGame':
+        if msg['type'] == 'playerId':
+            print("Removing player %d" % self.__playerId)
+            activePlayers.remove(self.__playerId)
+            currentPlayers[int(msg['playerId'])] = currentPlayers.pop(self.__playerId)
+            self.__playerId = int(msg['playerId'])
+            print("Adding player %d" % self.__playerId)
+            
+            activePlayers.append(self.__playerId)
+            print("Active players %s" % activePlayers)
+        elif msg['type'] == 'newGame':
             newGame = GameSession(self.__playerId)
             self.send_message({'type': 'newGame', 'gameId': newGame.getGameId()})
-        elif msg['type'] == 'endGame': # TODO: dopisać wysyłanie wiadomości do drugiego gracza i zamykanie połączeń WS
-            activePlayers.remove(self.__playerId)
-            del(currentPlayers[self.__playerId])
+        elif msg['type'] == 'exitGame': 
+            oponentId = self.__getOponentid(int(msg['gameId']), self.__playerId)
+            if(oponentId != 0):
+                currentPlayers[oponentId].send_message({'type': 'exitGame'})
+            del (gameList[int(msg['gameId'])])
+            print('Players in game %s' % playersInGame)
+            print('Active players %s' % activePlayers)
+            print('Connections %s' % currentPlayers)
+            print('Game list %s' % gameList)
         elif msg['type'] == 'test':
             self.send_message({'type': 'pong'})
         elif msg['type'] == 'joinGame':
             try:
                 if(gameList[msg['gameId']].addPlayer(self.__playerId)):
                     self.send_message({'type': 'joinGame', 'result': 1})
+                    print("Two many players %d" % self.__playerId )
                 else:
                     self.send_message({'type': 'joinGame', 'result': 0})
                     oponentId = self.__getOponentid(msg['gameId'], self.__playerId)
                     currentPlayers[oponentId].send_message(
                         {'type': 'joinGame', 'result': 0})
             except KeyError:
-                    self.send_message({'type': 'joinGame', 'result': 1})
+                print("Join Error %d" % self.__playerId)
+                self.send_message({'type': 'joinGame', 'result': 1})
         elif msg['type'] == 'shipSetup':
-            if(gameList[msg['gameId']].setupBoard(self.__playerId, msg['shipPos'])):
-                for playerId in self.__playerId:
-                    currentPlayers[playerId].send_message(
-                        {'type': 'gameReady'})
+            if(gameList[int(msg['gameId'])].setupBoard(self.__playerId, msg['shipPos'])):
+                self.send_message({'type': 'gameReady','yourTurn' : True,'playerId':self.__playerId})
+                oponentId = self.__getOponentid(int(msg['gameId']), self.__playerId)
+                currentPlayers[oponentId].send_message(
+                        {'type': 'gameReady','yourTurn' : False,'playerId':oponentId})
+                        
         elif msg['type'] == 'sendTorpedo':
-            oponentId = self.__getOponentid(msg['gameId'], msg['playerId'])
+            oponentId = self.__getOponentid(int(msg['gameId']), int(msg['playerId']))
             if(oponentId != 0):
-                hitResult = gameList[msg['gameId']].checkHit(
+                hitResult = gameList[int(msg['gameId'])].checkHit(
                     oponentId, msg['torpedoPos'])
                 if(hitResult == 2):
-                    currentPlayers[msg['playerId']].send_message(
-                        {'type': 'gameEnd', 'result': 'won'})
+                    currentPlayers[int(msg['playerId'])].send_message(
+                        {'type': 'gameEnd', 'result': 'won','position': msg['torpedoPos'],'board': 1,'hit':1})
                     currentPlayers[oponentId].send_message(
-                        {'type': 'gameEnd', 'result': 'lost'})
+                        {'type': 'gameEnd', 'result': 'lost','position': msg['torpedoPos'],'board': 0,'hit':1})
                 else:
-                    currentPlayers[msg['playerId']].send_message(
-                        {'type': 'torpedo', 'board': 1, 'position': msg['torpedoPos'], 'hit': hitResult})
+                    yourTurn = False
+                    if (hitResult == 1):
+                        yourTurn = True
+                    currentPlayers[int(msg['playerId'])].send_message(
+                        {'type': 'torpedo', 'board': 1, 'position': msg['torpedoPos'], 'hit': hitResult, 'yourTurn': yourTurn})
                     currentPlayers[oponentId].send_message(
-                        {'type': 'torpedo', 'board': 0, 'position': msg['torpedoPos'], 'hit': hitResult})
+                        {'type': 'torpedo', 'board': 0, 'position': msg['torpedoPos'], 'hit': hitResult, 'yourTurn': not yourTurn})
 
 
 class MyApplication(tornado.web.Application):
@@ -198,7 +225,6 @@ class MyApplication(tornado.web.Application):
 
     def try_exit(self):
         if self.is_closing:
-            # clean up here
             tornado.ioloop.IOLoop.instance().stop()
             logging.info('exit success')
 

@@ -8,15 +8,24 @@ import { MenuComponent } from "./menu/menu.component";
 import { WebsocketService } from "./_services/websocket.service";
 import { MatDialogModule } from "@angular/material/dialog";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { WaitingDialogComponent } from "./dialogs/waiting-dialog/waiting-dialog.component";
+import { EndDialogComponent } from './dialogs/end-dialog/end-dialog.component';
 
 @NgModule({
-  declarations: [AppComponent, BoardComponent, MenuComponent],
+  declarations: [
+    AppComponent,
+    BoardComponent,
+    MenuComponent,
+    WaitingDialogComponent,
+    EndDialogComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     MatDialogModule,
     BrowserAnimationsModule,
   ],
+  entryComponents: [WaitingDialogComponent],
   providers: [WebsocketService],
   bootstrap: [AppComponent],
 })

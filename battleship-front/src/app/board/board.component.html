@@ -1,17 +1,13 @@
 <div class="board-container">
-  <img
-    class="img-logo"
-    src="../assets/images/Battle Ship.png"
-    alt="Battleship logo"
-  />
+  <img class="img-logo" src="../assets/images/Battle Ship.png" alt="Battleship logo" />
   <div class="canvas-container">
     <canvas #canvas class="canvas-board" width="800" height="600"></canvas>
 
     <div class="btn-set-game-container" *ngIf="!gameReady">
       <button class="btn-ready btn" (click)="ready()">READY</button>
       <button class="btn" (click)="reset()">RESET</button>
-      <button class="btn">LEAVE</button>
+      <button class="btn" (click)="exitGame()">LEAVE</button>
     </div>
   </div>
-  <button *ngIf="gameReady" class="btn-leave btn">LEAVE</button>
+  <button *ngIf="gameReady" class="btn-leave btn" (click)="exitGame()">LEAVE</button>
 </div>

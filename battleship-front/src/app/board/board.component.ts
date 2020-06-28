@@ -1,20 +1,27 @@
-import {
-  Component,
-  OnInit,
-  ElementRef,
-  ViewChild,
-  Inject,
-} from "@angular/core";
+import { Component, OnInit, ElementRef, ViewChild } from "@angular/core";
 import { WebsocketService } from "../_services/websocket.service";
 import { Subject } from "rxjs";
 import { environment } from "src/environments/environment";
-import { ActivatedRoute } from "@angular/router";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { ActivatedRoute, Router } from "@angular/router";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { WaitingDialogComponent } from "../dialogs/waiting-dialog/waiting-dialog.component";
+import { GameDataService } from "../_services/game-data.service";
 
 export interface Ship {
   active: boolean;
   set: boolean;
   position: number[][];
+}
+
+export interface IMessage {
+  type: string;
+  gameId?: number;
+  shipPos?: number[][];
+  playerId?: number;
+  result?: string;
+  board?: number;
+  torpedoPos?: number[];
+  hit?: number;
 }
 
 @Component({
@@ -27,12 +34,16 @@ export class BoardComponent implements OnInit {
   canvas: ElementRef<HTMLCanvasElement>;
 
   public gameReady: boolean = false;
+  public yourTurn: boolean = false;
+  private waitingForEnemy: boolean = true;
 
   private ctx: CanvasRenderingContext2D;
 
   private tileSize: number = 42;
   private yourBoardX: number = this.tileSize;
   private yourBoardY: number = 3 * this.tileSize;
+  private enemyBoardX: number = this.yourBoardX + 13 * this.tileSize;
+  private enemyBoardY: number = this.yourBoardY;
 
   private colorShip: string = "#edae49";
   private colorGrayShip: string = "#a5a4a4";
@@ -47,11 +58,16 @@ export class BoardComponent implements OnInit {
   private lightningImg: HTMLImageElement;
 
   private wsConnection: Subject<any>;
-  private gameId = 0;
+  private gameId: number;
+  private playerId: number;
+  private dialogRef: MatDialogRef<WaitingDialogComponent>;
 
   constructor(
     private websocketConn: WebsocketService,
-    private router: ActivatedRoute // @Inject(MAT_DIALOG_DATA) public Id: number
+    private activatedRouter: ActivatedRoute,
+    private router: Router,
+    public dialog: MatDialog,
+    private gameSession: GameDataService
   ) {
     this.wsConnection = this.websocketConn.connect(environment.wsEndpoint);
     this.wsConnection.subscribe((msg) => {
@@ -61,13 +77,48 @@ export class BoardComponent implements OnInit {
         let text = reader.result as string;
         const object = JSON.parse(text);
         console.log(object);
+        this.parseMsg(object);
       };
 
       reader.readAsText(msg.data);
     });
+    this.playerId = this.websocketConn.getConnId();
   }
 
   ngOnInit(): void {
+    this.initCanvas();
+    this.gameId = this.activatedRouter.snapshot.params.id;
+    this.loadGameState();
+  }
+
+  private loadGameState() {
+    const gameState = this.gameSession.getGameState();
+    this.gameReady = gameState.gameReady;
+    this.waitingForEnemy = gameState.waitingForEnemy;
+    if (this.waitingForEnemy && !this.gameReady) {
+      this.shipList = gameState.shipList;
+      console.log(this.shipList);
+      this.dialogRef = this.dialog.open(WaitingDialogComponent, {
+        data: { gameId: this.gameId },
+        disableClose: true,
+        height: "300px",
+        width: "300px",
+      });
+      this.redrawPlacedShips();
+    } else if (this.gameReady) {
+      this.shipList = gameState.shipList;
+      this.drawTwoBoards();
+      this.changeTurn(gameState.boards.yourTurn);
+      for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 10; j++) {
+          this.fillHit(i, j, gameState.boards.yourBoard[i][j]);
+          this.fillHit(i + 13, j, gameState.boards.enemyBoard[i][j]);
+        }
+      }
+    }
+  }
+
+  private initCanvas() {
     this.canvas.nativeElement.addEventListener(
       "click",
       this.handleClick.bind(this)
@@ -88,25 +139,185 @@ export class BoardComponent implements OnInit {
     this.drawShips(this.yourBoardX, this.yourBoardY);
   }
 
-  // Odkomentować warunek sprawdzający ustawienie wszystkich statków
-  ready() {
-    // console.log("Game ready: " + this.gameReady);
-    if (this.allShipSet()) {
-      this.gameReady = true;
-      this.canvas.nativeElement.width = 1008;
-      this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
-      this.redrawPlacedShips();
-      this.drawBoard(
-        this.yourBoardX + 13 * this.tileSize,
+  private parseMsg(msg: Object) {
+    switch (msg["type"]) {
+      case "playerId": {
+        const connId = this.websocketConn.getConnId();
+        if (connId !== 0) {
+          if (msg["playerId"] !== connId) {
+            const newMsg = this.createMessage("playerId", undefined, connId);
+            this.wsConnection.next(newMsg);
+            // console.log(msg["playerId"]);
+            this.playerId = msg["playerId"];
+          }
+        }
+        break;
+      }
+      case "exitGame": {
+        if (this.dialogRef) {
+          this.dialogRef.close();
+        }
+        this.gameSession.resetService();
+        this.router.navigateByUrl("/", {
+          skipLocationChange: false,
+          replaceUrl: true,
+        });
+        break;
+      }
+      case "gameReady": {
+        this.dialogRef.close();
+        console.log("Your turn " + msg["yourTurn"]);
+        this.playerId = msg["playerId"];
+        this.drawTwoBoards();
+        this.changeTurn(msg["yourTurn"]);
+        this.gameReady = true;
+        this.gameSession.setGameReady(this.gameReady);
+        break;
+      }
+      case "gameEnd": {
+        let pos = msg["position"];
+        if (msg["board"] == 1) {
+          pos[0] = pos[0] + 13;
+        }
+        this.fillHit(pos[0], pos[1], msg["hit"]);
+        console.log("You " + msg["result"]);
+        break;
+      }
+      case "torpedo": {
+        let pos = msg["position"];
+        if (msg["board"] == 1) {
+          pos[0] = pos[0] + 13;
+        }
+        this.fillHit(pos[0], pos[1], msg["hit"]);
+        this.gameSession.updateBoard(
+          msg["board"],
+          pos,
+          msg["hit"],
+          msg["yourTurn"]
+        );
+        this.changeTurn(msg["yourTurn"]);
+      }
+    }
+  }
+
+  private changeTurn(myTurn: boolean) {
+    this.yourTurn = myTurn;
+    if (myTurn) {
+      this.drawBoardTitle(
+        this.yourBoardX,
         this.yourBoardY,
-        "ENEMY"
+        "YOU",
+        this.colorShip
       );
+      this.drawBoardTitle(
+        this.enemyBoardX,
+        this.enemyBoardY,
+        "ENEMY",
+        "#ffffff"
+      );
+    } else {
+      this.drawBoardTitle(this.yourBoardX, this.yourBoardY, "YOU", "#ffffff");
+      this.drawBoardTitle(
+        this.enemyBoardX,
+        this.enemyBoardY,
+        "ENEMY",
+        this.colorShip
+      );
+    }
+  }
+
+  public ready() {
+    if (this.allShipSet()) {
+      this.gameSession.setShipPos(this.shipList);
+      const msg = this.createMessage("shipSetup");
+      this.wsConnection.next(msg);
+      this.waitingForEnemy = true;
+      this.gameSession.setWaitingForEnemy(this.waitingForEnemy);
+      this.dialogRef = this.dialog.open(WaitingDialogComponent, {
+        data: { gameId: this.gameId },
+        disableClose: true,
+        height: "300px",
+        width: "300px",
+      });
     } else {
       alert("You have to place all ships on board before starting game");
     }
   }
 
-  reset() {
+  private drawTwoBoards() {
+    this.canvas.nativeElement.width = 1008;
+    this.drawBoard(this.yourBoardX, this.yourBoardY, "YOU");
+    this.redrawPlacedShips();
+    this.drawBoard(this.enemyBoardX, this.enemyBoardY, "ENEMY");
+  }
+
+  private createMessage(
+    type: string,
+    torpedoPos?: number[],
+    playerId?: number
+  ) {
+    let msg: IMessage;
+    switch (type) {
+      case "shipSetup": {
+        msg = {
+          type: type,
+          gameId: this.gameId,
+          shipPos: this.usedFields,
+        };
+        break;
+      }
+      case "exitGame": {
+        msg = { type: type, gameId: this.gameId };
+        break;
+      }
+      case "sendTorpedo": {
+        msg = {
+          type: type,
+          gameId: this.gameId,
+          playerId: this.playerId,
+          torpedoPos: torpedoPos,
+        };
+        break;
+      }
+      case "playerId": {
+        msg = {
+          type: type,
+          playerId: playerId,
+        };
+        break;
+      }
+    }
+    return msg;
+  }
+
+  public exitGame() {
+    const msg = this.createMessage("exitGame");
+    console.log("Exit message " + msg.gameId);
+    this.wsConnection.next(msg);
+    this.gameSession.resetService();
+    this.router.navigateByUrl("/", {
+      replaceUrl: true,
+      skipLocationChange: false,
+    });
+  }
+
+  private drawBoardTitle(
+    xPos: number,
+    yPos: number,
+    title: string,
+    color: string
+  ) {
+    this.ctx.font = "50px Sitka";
+    this.ctx.textAlign = "center";
+    this.ctx.fillStyle = color;
+    this.ctx.fillText(
+      title,
+      xPos + 5 * this.tileSize,
+      yPos - 1 * this.tileSize
+    );
+  }
+
+  public reset() {
     for (let i = 0; i < 5; i++) {
       this.shipList[i].active = false;
       this.shipList[i].position = [];
@@ -120,7 +331,7 @@ export class BoardComponent implements OnInit {
     this.isPlacingShip = false;
   }
 
-  allShipSet() {
+  private allShipSet() {
     for (let i = 0; i < 5; i++) {
       if (!this.shipList[i].set) {
         return false;
@@ -129,7 +340,7 @@ export class BoardComponent implements OnInit {
     return true;
   }
 
-  redrawPlacedShips() {
+  private redrawPlacedShips() {
     this.shipList.forEach((ship) => {
       for (let i = 0; i < ship.position.length; i++) {
         this.fillRectangle(
@@ -141,7 +352,7 @@ export class BoardComponent implements OnInit {
     });
   }
 
-  getMousePos(event) {
+  public getMousePos(event) {
     let rect = this.canvas.nativeElement.getBoundingClientRect();
     const x = event.clientX - rect.left - this.yourBoardX;
     const y = event.clientY - rect.top - this.yourBoardY;
@@ -154,7 +365,7 @@ export class BoardComponent implements OnInit {
     };
   }
 
-  handleClick(event) {
+  public handleClick(event) {
     let pos = this.getMousePos(event);
     const posx = pos.xPos;
     const posy = pos.yPos;
@@ -170,12 +381,15 @@ export class BoardComponent implements OnInit {
     } else {
       if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
         // console.log("Clicked on enemy board");
-        this.fillHit(posx, posy, 1);
+        if (this.yourTurn) {
+          const msg = this.createMessage("sendTorpedo", [posx - 13, posy]);
+          this.wsConnection.next(msg);
+        }
       }
     }
   }
 
-  placeShip(xPos: number, yPos: number) {
+  private placeShip(xPos: number, yPos: number) {
     // console.log("Dostępne elementy łodzi " + this.shipPartsAvailable);
     if (this.shipPartsAvailable > 0) {
       for (let i = 0; i < this.shipList.length; i++) {
@@ -370,7 +584,7 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  resetShip(shipNb: number) {
+  private resetShip(shipNb: number) {
     switch (shipNb) {
       case 0: {
         this.drawCustomGrid(
@@ -472,7 +686,7 @@ export class BoardComponent implements OnInit {
     this.shipList[shipNb].active = false;
   }
 
-  isValid(shipPos: number[][]) {
+  private isValid(shipPos: number[][]) {
     // console.log("Validation ");
     if (shipPos.length == 1) {
       if (
@@ -522,7 +736,7 @@ export class BoardComponent implements OnInit {
     return false;
   }
 
-  isEmptyField(xPos: number, yPos: number) {
+  private isEmptyField(xPos: number, yPos: number) {
     // console.log("Is empty point " + xPos + "," + yPos);
     for (let i = 0; i < this.usedFields.length; i++) {
       if (xPos == this.usedFields[i][0] && yPos == this.usedFields[i][1]) {
@@ -547,7 +761,7 @@ export class BoardComponent implements OnInit {
     return true;
   }
 
-  checkIfShipClicked(xPos: number, yPos: number) {
+  private checkIfShipClicked(xPos: number, yPos: number) {
     if (!this.isPlacingShip) {
       // console.log("position X: " + xPos + " Y: " + yPos);
       if ((xPos == 12 || xPos == 13) && yPos == 1) {
@@ -609,7 +823,7 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  drawBoard(xPos: number, yPos: number, title: string) {
+  private drawBoard(xPos: number, yPos: number, title: string) {
     const lineWidth = 2;
     this.ctx.lineWidth = lineWidth;
 
@@ -633,16 +847,10 @@ export class BoardComponent implements OnInit {
         yPos + 35 + i * this.tileSize
       );
     }
-    this.ctx.font = "50px Sitka";
-    this.ctx.textAlign = "center";
-    this.ctx.fillText(
-      title,
-      xPos + 5 * this.tileSize,
-      yPos - 1 * this.tileSize
-    );
+    this.drawBoardTitle(xPos, yPos, title, "#ffffff");
   }
 
-  drawCustomGrid(
+  private drawCustomGrid(
     xPos: number,
     yPos: number,
     xSize: number,
@@ -667,7 +875,7 @@ export class BoardComponent implements OnInit {
     this.ctx.closePath();
   }
 
-  drawShips(xPos: number, yPos: number) {
+  private drawShips(xPos: number, yPos: number) {
     // Ship 2x1
     this.drawCustomGrid(
       xPos + 12 * this.tileSize,
@@ -745,7 +953,7 @@ export class BoardComponent implements OnInit {
     );
   }
 
-  fillCustomGrid(
+  private fillCustomGrid(
     xPos: number,
     yPos: number,
     xSize: number,
@@ -766,7 +974,7 @@ export class BoardComponent implements OnInit {
   }
 
   // Funkcja odpowiedzialna za pokolorowanie pola po trafieniu == 1 / nietrafieniu == 0
-  fillHit(xPos: number, yPos: number, isHit: number) {
+  private fillHit(xPos: number, yPos: number, isHit: number) {
     if (isHit == 1) {
       this.fillRectangle(xPos, yPos, this.colorRed);
       this.ctx.drawImage(
@@ -790,7 +998,7 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  fillRectangle(xPos: number, yPos: number, color: string) {
+  private fillRectangle(xPos: number, yPos: number, color: string) {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(
       xPos * this.tileSize + 2 + this.yourBoardX,
