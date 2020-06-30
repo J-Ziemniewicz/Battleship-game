@@ -142,6 +142,14 @@ export class BoardComponent implements OnInit {
     }
   }
 
+  //TODO: Function which detects sunked ship
+
+  // private findHitShip(xPos: number, yPos: number) {
+  //   for (let i = 0; i < this.shipList.length; i++){
+
+  //   }
+  // }
+
   private initCanvas() {
     console.log("InitCanvas");
     this.canvas.nativeElement.addEventListener(
