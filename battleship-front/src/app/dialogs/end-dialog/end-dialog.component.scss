@@ -1,0 +1,28 @@
+.mat-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  margin-top: 60px;
+  text-align: center;
+  font-size: 80px;
+  font-family: "Sitka Small", sans-serif;
+  color: #1c7293;
+  text-transform: uppercase;
+}
+
+.btn {
+  height: 75px;
+  width: 223px;
+  margin: 23px 0 0 0;
+  font-size: 40px;
+  color: #ffffff;
+  background-color: #1c7293;
+  border: 0;
+}
+
+.btn:hover {
+  border: 2px solid #edae49;
+}

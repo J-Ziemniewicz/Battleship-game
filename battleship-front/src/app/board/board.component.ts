@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { WaitingDialogComponent } from "../dialogs/waiting-dialog/waiting-dialog.component";
 import { GameDataService } from "../_services/game-data.service";
+import { EndDialogComponent } from "../dialogs/end-dialog/end-dialog.component";
 
 export interface Ship {
   active: boolean;
@@ -55,13 +56,14 @@ export class BoardComponent implements OnInit {
   private shipPartsAvailable: number;
   private isPlacingShip: boolean = false;
   private usedFields: number[][] = [];
+  private torpedoFields: number[][] = [];
 
   private lightningImg: HTMLImageElement;
 
   private wsConnection: Subject<any>;
   private gameId: number;
   private playerId: number;
-  private dialogRef: MatDialogRef<WaitingDialogComponent>;
+  private waitingDialogRef: MatDialogRef<WaitingDialogComponent>;
 
   constructor(
     private websocketConn: WebsocketService,
@@ -105,13 +107,14 @@ export class BoardComponent implements OnInit {
     if (this.waitingForEnemy && !this.gameReady) {
       this.shipList = gameState.shipList;
       console.log(this.shipList);
-      this.dialogRef = this.dialog.open(WaitingDialogComponent, {
+      this.waitingDialogRef = this.dialog.open(WaitingDialogComponent, {
         data: { gameId: this.gameId },
         disableClose: true,
         height: "300px",
         width: "300px",
       });
       this.redrawPlacedShips();
+      this.drawShips(this.yourBoardX, this.yourBoardY, this.colorGrayShip);
     } else if (this.gameReady) {
       this.lightningImg = new Image();
       console.log("Init lightningBolt");
@@ -119,10 +122,15 @@ export class BoardComponent implements OnInit {
         this.shipList = gameState.shipList;
         this.drawTwoBoards();
         this.changeTurn(gameState.boards.yourTurn);
+
         for (let i = 0; i < 10; i++) {
           for (let j = 0; j < 10; j++) {
             this.fillHit(i, j, gameState.boards.yourBoard[i][j]);
             this.fillHit(i + 13, j, gameState.boards.enemyBoard[i][j]);
+            if (gameState.boards.enemyBoard[i][j] > -1) {
+              console.log("add torpedo " + i + " " + j);
+              this.torpedoFields.push([i + 13, j]);
+            }
           }
         }
         this.imageLoaded = true;
@@ -168,8 +176,8 @@ export class BoardComponent implements OnInit {
         break;
       }
       case "exitGame": {
-        if (this.dialogRef) {
-          this.dialogRef.close();
+        if (this.waitingDialogRef) {
+          this.waitingDialogRef.close();
         }
         this.gameSession.resetService();
         this.router.navigateByUrl("/", {
@@ -179,7 +187,7 @@ export class BoardComponent implements OnInit {
         break;
       }
       case "gameReady": {
-        this.dialogRef.close();
+        this.waitingDialogRef.close();
         console.log("Your turn " + msg["yourTurn"]);
         // this.playerId = msg["playerId"];
         this.drawTwoBoards();
@@ -194,15 +202,27 @@ export class BoardComponent implements OnInit {
           pos[0] = pos[0] + 13;
         }
         this.fillHit(pos[0], pos[1], msg["hit"]);
+        this.gameSession.resetService();
+        this.dialog.open(EndDialogComponent, {
+          data: { result: msg["result"] },
+          disableClose: true,
+          height: "290px",
+          width: "650px",
+        });
         console.log("You " + msg["result"]);
         break;
       }
       case "torpedo": {
         if (msg["board"] == 1) {
           this.fillHit(msg["position"][0] + 13, msg["position"][1], msg["hit"]);
+          this.torpedoFields.push([
+            msg["position"][0] + 13,
+            msg["position"][1],
+          ]);
         } else {
           this.fillHit(msg["position"][0], msg["position"][1], msg["hit"]);
         }
+
         this.gameSession.updateBoard(
           msg["board"],
           msg["position"],
@@ -247,7 +267,7 @@ export class BoardComponent implements OnInit {
       this.wsConnection.next(msg);
       this.waitingForEnemy = true;
       this.gameSession.setWaitingForEnemy(this.waitingForEnemy);
-      this.dialogRef = this.dialog.open(WaitingDialogComponent, {
+      this.waitingDialogRef = this.dialog.open(WaitingDialogComponent, {
         data: { gameId: this.gameId },
         disableClose: true,
         height: "300px",
@@ -396,11 +416,25 @@ export class BoardComponent implements OnInit {
       if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
         // console.log("Clicked on enemy board");
         if (this.yourTurn) {
-          const msg = this.createMessage("sendTorpedo", [posx - 13, posy]);
-          this.wsConnection.next(msg);
+          if (this.checkIfCanTorpedo(posx, posy)) {
+            const msg = this.createMessage("sendTorpedo", [posx - 13, posy]);
+            this.wsConnection.next(msg);
+          }
         }
       }
     }
+  }
+
+  private checkIfCanTorpedo(xPos: number, yPos: number) {
+    for (let i = 0; i < this.torpedoFields.length; i++) {
+      if (
+        xPos == this.torpedoFields[i][0] &&
+        yPos == this.torpedoFields[i][1]
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private placeShip(xPos: number, yPos: number) {
@@ -889,7 +923,13 @@ export class BoardComponent implements OnInit {
     this.ctx.closePath();
   }
 
-  private drawShips(xPos: number, yPos: number) {
+  private drawShips(
+    xPos: number,
+    yPos: number,
+    color: string = this.colorShip
+  ) {
+    const shipColor = color;
+    console.log("Color w drawShips " + shipColor);
     // Ship 2x1
     this.drawCustomGrid(
       xPos + 12 * this.tileSize,
@@ -903,7 +943,7 @@ export class BoardComponent implements OnInit {
       yPos + 1 * this.tileSize,
       2,
       1,
-      this.colorShip
+      shipColor
     );
     // Ship 3x1
     this.drawCustomGrid(
@@ -918,7 +958,7 @@ export class BoardComponent implements OnInit {
       yPos + 3 * this.tileSize,
       3,
       1,
-      this.colorShip
+      shipColor
     );
     // Ship 3x1
     this.drawCustomGrid(
@@ -933,7 +973,7 @@ export class BoardComponent implements OnInit {
       yPos + 5 * this.tileSize,
       3,
       1,
-      this.colorShip
+      shipColor
     );
     // Ship 4x1
     this.drawCustomGrid(
@@ -948,7 +988,7 @@ export class BoardComponent implements OnInit {
       yPos + 7 * this.tileSize,
       4,
       1,
-      this.colorShip
+      shipColor
     );
     // Ship 5x1
     this.drawCustomGrid(
@@ -963,7 +1003,7 @@ export class BoardComponent implements OnInit {
       yPos + 9 * this.tileSize,
       5,
       1,
-      this.colorShip
+      shipColor
     );
   }
 

@@ -206,6 +206,7 @@ class Player(tornado.websocket.WebSocketHandler):
                         {'type': 'gameEnd', 'result': 'won','position': msg['torpedoPos'],'board': 1,'hit':1})
                     currentPlayers[oponentId].send_message(
                         {'type': 'gameEnd', 'result': 'lost','position': msg['torpedoPos'],'board': 0,'hit':1})
+                    del (gameList[int(msg['gameId'])])
                 else:
                     yourTurn = False
                     if (hitResult == 1):

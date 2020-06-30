@@ -8,11 +8,19 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
   styleUrls: ["./end-dialog.component.scss"],
 })
 export class EndDialogComponent implements OnInit {
+  public result: string;
+
   constructor(
     public dialogRef: MatDialogRef<EndDialogComponent>,
     private router: Router,
     @Inject(MAT_DIALOG_DATA) public data: any
-  ) {}
+  ) {
+    if (data.result === "won") {
+      this.result = data.result + " :)";
+    } else {
+      this.result = data.result + " :(";
+    }
+  }
 
   ngOnInit(): void {}
 
