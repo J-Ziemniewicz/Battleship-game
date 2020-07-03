@@ -124,14 +124,12 @@ class Player(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
         dict_str = message.decode("UTF-8")
-        print(dict_str)
         incomingMsg = ast.literal_eval(dict_str)
 
         print(repr(incomingMsg))
         self.__parseMsgType(incomingMsg)
 
     def on_close(self):
-        # playersInGame.remove(self.__playerId)
         activePlayers.remove(self.__playerId)
         del(currentPlayers[self.__playerId])
         print('Player %d closed  connection' % self.__playerId)
@@ -215,6 +213,11 @@ class Player(tornado.websocket.WebSocketHandler):
                         {'type': 'torpedo', 'board': 1, 'position': msg['torpedoPos'], 'hit': hitResult, 'yourTurn': yourTurn})
                     currentPlayers[oponentId].send_message(
                         {'type': 'torpedo', 'board': 0, 'position': msg['torpedoPos'], 'hit': hitResult, 'yourTurn': not yourTurn})
+        elif msg['type'] == 'shipSunk':
+            oponentId = self.__getOponentid(int(msg['gameId']), self.__playerId)
+            if(oponentId != 0):
+                    currentPlayers[oponentId].send_message(
+                        {'type': 'shipSunk','shipPos': msg['shipPos']})
 
 
 class MyApplication(tornado.web.Application):

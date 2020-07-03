@@ -17,7 +17,7 @@ export class WebsocketService {
   public connect(url): Subject<MessageEvent> {
     if (!this.subject) {
       this.subject = this.create(url);
-      console.log("successfully Connect: " + url);
+      // console.log("successfully Connect: " + url);
     }
     return this.subject;
   }
@@ -30,7 +30,7 @@ export class WebsocketService {
       ws.onerror = obs.error.bind(obs);
       ws.onclose = obs.complete.bind(obs);
       ws.onclose = () => {
-        console.log("trying to reconnect");
+        // console.log("trying to reconnect");
         this.subject = null;
         this.connect(url);
       };
@@ -50,12 +50,12 @@ export class WebsocketService {
 
   public setConnId(id: number) {
     this.connId = id;
-    console.log("addidng player Id " + this.connId);
+    // console.log("addidng player Id " + this.connId);
     sessionStorage.setItem("playerId", id.toString());
   }
 
   public getConnId() {
-    console.log("Played id in websocketService " + this.connId);
+    // console.log("Player ID in websocketService " + this.connId);
     return this.connId;
   }
 }

@@ -4,6 +4,8 @@ export interface IShip {
   active: boolean;
   set: boolean;
   position: number[][];
+  hitCount: number;
+  sunk: boolean;
 }
 
 export interface IMenuState {
@@ -28,6 +30,7 @@ export interface IGameState {
   // isPlacingShip?: boolean;
   // usedFields?: number[][];
   boards?: IBoardState;
+  sunkFields?: number[][];
 }
 
 @Injectable({
@@ -48,7 +51,7 @@ export class GameDataService {
       this.menuComponentState = JSON.parse(
         sessionStorage.getItem("menuState")
       ) as IMenuState;
-      console.log(sessionStorage.getItem("menuState"));
+      // console.log(sessionStorage.getItem("menuState"));
     }
     if (sessionStorage.getItem("boardCompState") !== null) {
       this.boardComponentState = JSON.parse(
@@ -67,6 +70,7 @@ export class GameDataService {
       gameReady: false,
       waitingForEnemy: false,
       gameId: 0,
+      sunkFields: [],
     };
     this.menuComponentState = {
       chooseGame: false,
@@ -79,6 +83,7 @@ export class GameDataService {
   }
 
   private clearBoards() {
+    this.boardComponentState.sunkFields = [];
     for (let i = 0; i < 10; i++) {
       this.boardState.enemyBoard[i] = [];
       this.boardState.yourBoard[i] = [];
@@ -167,6 +172,22 @@ export class GameDataService {
     );
   }
 
+  public updateShipState(ship: IShip, shipNb: number) {
+    this.boardComponentState.shipList[shipNb] = ship;
+    sessionStorage.setItem(
+      "boardCompState",
+      JSON.stringify(this.boardComponentState)
+    );
+  }
+
+  public updateSunkFields(pos: number[]) {
+    this.boardComponentState.sunkFields.push(pos);
+    sessionStorage.setItem(
+      "boardCompState",
+      JSON.stringify(this.boardComponentState)
+    );
+  }
+
   public setShipPos(shipsPos: IShip[]) {
     this.boardComponentState.shipList = shipsPos;
     sessionStorage.setItem(
@@ -181,15 +202,15 @@ export class GameDataService {
     torpedo: number,
     turn: boolean
   ) {
-    console.log("board " + board);
-    console.log("pos " + pos);
-    console.log("torpedo " + torpedo);
-    console.log("turn " + turn);
-    console.log(this.boardState);
+    // console.log("board " + board);
+    // console.log("pos " + pos);
+    // console.log("torpedo " + torpedo);
+    // console.log("turn " + turn);
+    // console.log(this.boardState);
     switch (board) {
       case 0: {
         this.boardState.yourBoard[pos[0]][pos[1]] = torpedo;
-        console.log(this.boardState.yourBoard);
+        // console.log(this.boardState.yourBoard);
         break;
       }
       case 1: {

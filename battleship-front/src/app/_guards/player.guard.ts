@@ -36,12 +36,12 @@ export class PlayerGuard implements CanActivate {
 
   private checkIfPlayerConnected(next: ActivatedRouteSnapshot) {
     const gameId = next.params.id;
-    console.log("gameId from url " + gameId);
-    console.log("gamesession " + this.gameSession.getGameId());
+    // console.log("gameId from url " + gameId);
+    // console.log("gamesession " + this.gameSession.getGameId());
     if (this.websocketConn.getConnId() !== 0) {
-      console.log("web connection exist");
+      // console.log("web connection exist");
       if (gameId == this.gameSession.getGameId() && gameId !== 0) {
-        console.log("entered game");
+        // console.log("entered game");
         return true;
       }
     }
