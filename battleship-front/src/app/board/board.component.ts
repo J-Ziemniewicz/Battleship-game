@@ -13,6 +13,7 @@ import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { WaitingDialogComponent } from "../dialogs/waiting-dialog/waiting-dialog.component";
 import { GameDataService } from "../_services/game-data.service";
 import { EndDialogComponent } from "../dialogs/end-dialog/end-dialog.component";
+import { ShipSunkComponent } from "../dialogs/ship-sunk/ship-sunk.component";
 
 export interface Ship {
   active: boolean;
@@ -191,6 +192,11 @@ export class BoardComponent implements OnInit {
         this.wsConnection.next(newMsg);
         console.log("checkIfSunk " + this.shipList[shipNb].position);
         this.drawSunkShip(this.shipList[shipNb].position, true);
+        this.dialog.open(ShipSunkComponent, {
+          data: { result: true },
+          height: "200px",
+          width: "500px",
+        });
       }
       this.gameSession.updateShipState(this.shipList[shipNb], shipNb);
     }
@@ -290,6 +296,11 @@ export class BoardComponent implements OnInit {
       case "shipSunk": {
         console.log("Ship sunk " + msg["shipPos"]);
         this.drawSunkShip(msg["shipPos"], false);
+        this.dialog.open(ShipSunkComponent, {
+          data: { result: false },
+          height: "200px",
+          width: "500px",
+        });
         break;
       }
     }

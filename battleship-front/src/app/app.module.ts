@@ -9,7 +9,9 @@ import { WebsocketService } from "./_services/websocket.service";
 import { MatDialogModule } from "@angular/material/dialog";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { WaitingDialogComponent } from "./dialogs/waiting-dialog/waiting-dialog.component";
-import { EndDialogComponent } from './dialogs/end-dialog/end-dialog.component';
+import { EndDialogComponent } from "./dialogs/end-dialog/end-dialog.component";
+import { NgBootstrapAlertModule } from "ng-bootstrap-alert";
+import { ShipSunkComponent } from './dialogs/ship-sunk/ship-sunk.component';
 
 @NgModule({
   declarations: [
@@ -18,12 +20,14 @@ import { EndDialogComponent } from './dialogs/end-dialog/end-dialog.component';
     MenuComponent,
     WaitingDialogComponent,
     EndDialogComponent,
+    ShipSunkComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     MatDialogModule,
     BrowserAnimationsModule,
+    NgBootstrapAlertModule,
   ],
   entryComponents: [WaitingDialogComponent],
   providers: [WebsocketService],
