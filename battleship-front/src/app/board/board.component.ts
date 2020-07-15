@@ -83,12 +83,11 @@ export class BoardComponent implements OnInit {
   ) {
     this.wsConnection = this.websocketConn.connect(environment.wsEndpoint);
     this.wsConnection.subscribe((msg) => {
-      // console.log(msg);
       const reader = new FileReader();
       reader.onloadend = (e) => {
         let text = reader.result as string;
         const object = JSON.parse(text);
-        console.log(object);
+
         this.parseMsg(object);
       };
       reader.readAsText(msg.data);
@@ -119,7 +118,7 @@ export class BoardComponent implements OnInit {
     this.waitingForEnemy = gameState.waitingForEnemy;
     if (this.waitingForEnemy && !this.gameReady) {
       this.shipList = gameState.shipList;
-      // console.log(this.shipList);
+
       this.waitingDialogRef = this.dialog.open(WaitingDialogComponent, {
         data: { gameId: this.gameId },
         disableClose: true,
@@ -130,7 +129,7 @@ export class BoardComponent implements OnInit {
       this.drawShips(this.yourBoardX, this.yourBoardY, this.colorGrayShip);
     } else if (this.gameReady) {
       this.lightningImg = new Image();
-      // console.log("Init lightningBolt");
+
       this.lightningImg.onload = () => {
         this.shipList = gameState.shipList;
         this.drawTwoBoards();
@@ -141,7 +140,6 @@ export class BoardComponent implements OnInit {
             this.fillHit(i, j, gameState.boards.yourBoard[i][j]);
             this.fillHit(i + 13, j, gameState.boards.enemyBoard[i][j]);
             if (gameState.boards.enemyBoard[i][j] > -1) {
-              // console.log("add torpedo " + i + " " + j);
               this.torpedoFields.push([i + 13, j]);
             }
           }
@@ -156,8 +154,6 @@ export class BoardComponent implements OnInit {
       };
 
       this.lightningImg.src = "../assets/images/lightning.png";
-
-      // console.log("lightningBolt src " + this.lightningImg.src);
     }
   }
 
@@ -180,8 +176,6 @@ export class BoardComponent implements OnInit {
     const shipNb = this.findHitShip(xPos, yPos);
     if (shipNb != -1) {
       if (this.shipList[shipNb].hitCount === 0) {
-        console.log("Ship " + shipNb + " is Sunk");
-
         this.shipList[shipNb].sunk = true;
         const newMsg = this.createMessage(
           "shipSunk",
@@ -190,7 +184,7 @@ export class BoardComponent implements OnInit {
           shipNb
         );
         this.wsConnection.next(newMsg);
-        console.log("checkIfSunk " + this.shipList[shipNb].position);
+
         this.drawSunkShip(this.shipList[shipNb].position, true);
         this.dialog.open(ShipSunkComponent, {
           data: { result: true },
@@ -203,7 +197,6 @@ export class BoardComponent implements OnInit {
   }
 
   private initCanvas() {
-    // console.log("InitCanvas");
     this.canvas.nativeElement.addEventListener(
       "click",
       this.handleClick.bind(this)
@@ -231,7 +224,6 @@ export class BoardComponent implements OnInit {
           if (msg["playerId"] !== connId) {
             const newMsg = this.createMessage("playerId", undefined, connId);
             this.wsConnection.next(newMsg);
-            // console.log(msg["playerId"]);
           }
         }
         break;
@@ -249,7 +241,7 @@ export class BoardComponent implements OnInit {
       }
       case "gameReady": {
         this.waitingDialogRef.close();
-        // console.log("Your turn " + msg["yourTurn"]);
+
         this.drawTwoBoards();
         this.changeTurn(msg["yourTurn"]);
         this.gameReady = true;
@@ -269,7 +261,7 @@ export class BoardComponent implements OnInit {
           height: "290px",
           width: "650px",
         });
-        // console.log("You " + msg["result"]);
+
         break;
       }
       case "torpedo": {
@@ -294,7 +286,6 @@ export class BoardComponent implements OnInit {
         break;
       }
       case "shipSunk": {
-        console.log("Ship sunk " + msg["shipPos"]);
         this.drawSunkShip(msg["shipPos"], false);
         this.dialog.open(ShipSunkComponent, {
           data: { result: false },
@@ -352,7 +343,7 @@ export class BoardComponent implements OnInit {
 
   private drawSunkShip(shipPos: number[][], yourBoard: boolean) {
     let board: number;
-    console.log("Draw sunk - Your board: " + yourBoard + " pos " + shipPos);
+
     if (yourBoard) {
       board = 0;
     } else {
@@ -362,7 +353,7 @@ export class BoardComponent implements OnInit {
       if (!yourBoard) {
         this.gameSession.updateSunkFields(pos);
       }
-      console.log(pos);
+
       this.drawCustomGrid(
         (pos[0] + board) * this.tileSize + this.yourBoardX,
         pos[1] * this.tileSize + this.yourBoardY,
@@ -417,9 +408,6 @@ export class BoardComponent implements OnInit {
         break;
       }
       case "shipSunk": {
-        console.log("Createing message " + this.shipList[shipNb].position);
-
-        console.log("Createing message shipNb " + shipNb);
         msg = {
           type: type,
           gameId: this.gameId,
@@ -433,7 +421,7 @@ export class BoardComponent implements OnInit {
 
   public exitGame() {
     const msg = this.createMessage("exitGame");
-    // console.log("Exit message " + msg.gameId);
+
     this.wsConnection.next(msg);
     this.gameSession.resetService();
     this.router.navigateByUrl("/", {
@@ -502,7 +490,7 @@ export class BoardComponent implements OnInit {
     const y = event.clientY - rect.top - this.yourBoardY;
     const xPos = Math.floor((x - 1) / this.tileSize);
     const yPos = Math.floor((y - 1) / this.tileSize);
-    // console.log("Pixel position: x -> " + x + " y -> " + y);
+
     return {
       xPos,
       yPos,
@@ -514,7 +502,6 @@ export class BoardComponent implements OnInit {
     const posx = pos.xPos;
     const posy = pos.yPos;
 
-    // console.log("\n" + posx + " " + posy);
     if (!this.gameReady) {
       this.checkIfShipClicked(posx, posy);
       if (this.isPlacingShip) {
@@ -524,7 +511,6 @@ export class BoardComponent implements OnInit {
       }
     } else {
       if (posx < 23 && posx > 12 && posy >= 0 && posy < 10) {
-        // console.log("Clicked on enemy board");
         if (this.yourTurn) {
           if (this.checkIfCanTorpedo(posx, posy)) {
             const msg = this.createMessage("sendTorpedo", [posx - 13, posy]);
@@ -548,14 +534,12 @@ export class BoardComponent implements OnInit {
   }
 
   private placeShip(xPos: number, yPos: number) {
-    // console.log("Dostępne elementy łodzi " + this.shipPartsAvailable);
     if (this.shipPartsAvailable > 0) {
       for (let i = 0; i < this.shipList.length; i++) {
         if (this.shipList[i].active) {
-          // console.log("Statek jest aktywny: " + i);
           if (this.isEmptyField(xPos, yPos)) {
             let len = this.shipList[i].position.length;
-            // console.log("Długość list statku " + i + " : " + len);
+
             if (len == 0) {
               this.fillRectangle(xPos, yPos, this.colorGrayShip);
               this.shipList[i].position.push([xPos, yPos]);
@@ -584,7 +568,7 @@ export class BoardComponent implements OnInit {
                 this.shipList[i].position.forEach((pos) => {
                   tempYArray.push(pos[1]);
                 });
-                // console.log(tempYArray);
+
                 const yMax = Math.max(...tempYArray);
                 const yMin = Math.min(...tempYArray);
 
@@ -605,7 +589,7 @@ export class BoardComponent implements OnInit {
                 this.shipList[i].position.forEach((pos) => {
                   tempXArray.push(pos[0]);
                 });
-                // console.log(tempXArray);
+
                 const xMax = Math.max(...tempXArray);
                 const xMin = Math.min(...tempXArray);
 
@@ -620,9 +604,8 @@ export class BoardComponent implements OnInit {
                 }
               }
             }
-            // console.log("Pozostałe części " + this.shipPartsAvailable);
+
             if (this.shipPartsAvailable == 0) {
-              // console.log("Koniec statku " + i);
               this.isPlacingShip = false;
               this.shipList[i].active = false;
               this.shipList[i].set = true;
@@ -631,7 +614,6 @@ export class BoardComponent implements OnInit {
               });
               switch (i) {
                 case 0: {
-                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 1 * this.tileSize,
@@ -649,7 +631,6 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 1: {
-                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 3 * this.tileSize,
@@ -667,7 +648,6 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 2: {
-                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 5 * this.tileSize,
@@ -685,7 +665,6 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 3: {
-                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 7 * this.tileSize,
@@ -703,7 +682,6 @@ export class BoardComponent implements OnInit {
                   break;
                 }
                 case 4: {
-                  // console.log(i);
                   this.drawCustomGrid(
                     this.yourBoardX + 12 * this.tileSize,
                     this.yourBoardY + 9 * this.tileSize,
@@ -730,12 +708,6 @@ export class BoardComponent implements OnInit {
               alert("You can not place ship here");
               break;
             }
-          } else {
-            console.log(
-              "Pole nie jest dostępne, pozostałe części " +
-                this.shipPartsAvailable
-            );
-            break;
           }
         }
       }
@@ -839,13 +811,12 @@ export class BoardComponent implements OnInit {
       );
       this.usedFields.pop();
     }
-    // console.log(this.usedFields);
+
     this.shipList[shipNb].position = [];
     this.shipList[shipNb].active = false;
   }
 
   private isValid(shipPos: number[][]) {
-    // console.log("Validation ");
     if (shipPos.length == 1) {
       if (
         this.isEmptyField(shipPos[0][0] + 1, shipPos[0][1]) ||
@@ -857,16 +828,14 @@ export class BoardComponent implements OnInit {
       }
     } else if (shipPos.length > 1) {
       if (shipPos[0][0] == shipPos[1][0]) {
-        // console.log("Statek w pionie");
         let tempXArray = [] as number[];
         shipPos.forEach((pos) => {
           tempXArray.push(pos[1]);
         });
-        // console.log(tempXArray);
+
         const yMax = Math.max(...tempXArray);
         const yMin = Math.min(...tempXArray);
-        // console.log(shipPos);
-        // console.log("yMax: " + yMax + " yMin: " + yMin);
+
         if (
           this.isEmptyField(shipPos[0][0], yMax + 1) ||
           this.isEmptyField(shipPos[0][0], yMin - 1)
@@ -878,11 +847,10 @@ export class BoardComponent implements OnInit {
         shipPos.forEach((pos) => {
           tempYArray.push(pos[0]);
         });
-        // console.log(tempYArray);
+
         const xMax = Math.max(...tempYArray);
         const xMin = Math.min(...tempYArray);
-        // console.log(shipPos);
-        // console.log("xMax: " + xMax + " xMin: " + xMin);
+
         if (
           this.isEmptyField(xMax + 1, shipPos[0][1]) ||
           this.isEmptyField(xMin - 1, shipPos[0][1])
@@ -895,33 +863,19 @@ export class BoardComponent implements OnInit {
   }
 
   private isEmptyField(xPos: number, yPos: number) {
-    // console.log("Is empty point " + xPos + "," + yPos);
     for (let i = 0; i < this.usedFields.length; i++) {
       if (xPos == this.usedFields[i][0] && yPos == this.usedFields[i][1]) {
-        // console.log(
-        //   "In usedField-> Position X: " +
-        //     xPos +
-        //     " Y: " +
-        //     yPos +
-        //     " Valid: " +
-        //     false
-        // );
         return false;
       }
     }
     if (xPos < 0 || xPos > 9 || yPos < 0 || yPos > 9) {
-      // console.log(
-      //   "Za planszą -> Position X: " + xPos + " Y: " + yPos + " Valid: " + false
-      // );
       return false;
     }
-    // console.log("Position X: " + xPos + " Y: " + yPos + " Valid: " + true);
     return true;
   }
 
   private checkIfShipClicked(xPos: number, yPos: number) {
     if (!this.isPlacingShip) {
-      // console.log("position X: " + xPos + " Y: " + yPos);
       if ((xPos == 12 || xPos == 13) && yPos == 1 && !this.shipList[0].set) {
         this.drawCustomGrid(
           this.yourBoardX + 12 * this.tileSize,
@@ -1044,7 +998,6 @@ export class BoardComponent implements OnInit {
     color: string = this.colorShip
   ) {
     const shipColor = color;
-    // console.log("Color w drawShips " + shipColor);
     // Ship 2x1
     this.drawCustomGrid(
       xPos + 12 * this.tileSize,
@@ -1146,7 +1099,6 @@ export class BoardComponent implements OnInit {
   private fillHit(xPos: number, yPos: number, isHit: number) {
     if (isHit == 1) {
       this.fillRectangle(xPos, yPos, this.colorRed);
-      // console.log("draw lightningbolt");
       this.ctx.drawImage(
         this.lightningImg,
         xPos * this.tileSize + 12 + this.yourBoardX,
@@ -1160,7 +1112,6 @@ export class BoardComponent implements OnInit {
         "black"
       );
     } else if (isHit == 0) {
-      // console.log("Draw circle");
       this.ctx.beginPath();
       this.ctx.arc(
         (xPos + 0.5) * this.tileSize + this.yourBoardX,

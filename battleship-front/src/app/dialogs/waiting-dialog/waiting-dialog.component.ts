@@ -18,7 +18,7 @@ export interface IMessage {
 }
 
 @Component({
-  selector: "app-waiting-dialog",
+  // selector: "app-waiting-dialog",
   templateUrl: "./waiting-dialog.component.html",
   styleUrls: ["./waiting-dialog.component.scss"],
 })
@@ -46,7 +46,6 @@ export class WaitingDialogComponent implements OnInit {
 
   exitGame() {
     const msg = this.createMessage("exitGame");
-    console.log(msg);
     this.wsConnection.next(msg);
     this.gameSession.resetService();
     this.router.navigate(["/"]);

@@ -1,6 +1,5 @@
-import { Component, OnInit, Inject, AfterViewInit } from "@angular/core";
+import { Component, Inject, AfterViewInit } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { Router } from "@angular/router";
 
 @Component({
   selector: "app-ship-sunk",
@@ -23,6 +22,6 @@ export class ShipSunkComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     setTimeout(() => {
       this.dialogRef.close();
-    }, 800);
+    }, 1000);
   }
 }

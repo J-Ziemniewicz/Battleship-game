@@ -1,16 +1,20 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ShipSunkComponent } from './ship-sunk.component';
+import { ShipSunkComponent } from "./ship-sunk.component";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-describe('ShipSunkComponent', () => {
+describe("ShipSunkComponent", () => {
   let component: ShipSunkComponent;
   let fixture: ComponentFixture<ShipSunkComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ShipSunkComponent ]
-    })
-    .compileComponents();
+      declarations: [ShipSunkComponent],
+      providers: [
+        { provide: MatDialogRef, useValue: {} },
+        { provide: MAT_DIALOG_DATA, useValue: {} },
+      ],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -19,7 +23,7 @@ describe('ShipSunkComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

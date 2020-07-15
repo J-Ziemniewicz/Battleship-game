@@ -1,16 +1,22 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { WaitingDialogComponent } from './waiting-dialog.component';
+import { WaitingDialogComponent } from "./waiting-dialog.component";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { RouterTestingModule } from "@angular/router/testing";
 
-describe('WaitingDialogComponent', () => {
+describe("WaitingDialogComponent", () => {
   let component: WaitingDialogComponent;
   let fixture: ComponentFixture<WaitingDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ WaitingDialogComponent ]
-    })
-    .compileComponents();
+      declarations: [WaitingDialogComponent],
+      imports: [RouterTestingModule],
+      providers: [
+        { provide: MatDialogRef, useValue: {} },
+        { provide: MAT_DIALOG_DATA, useValue: {} },
+      ],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -19,7 +25,7 @@ describe('WaitingDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

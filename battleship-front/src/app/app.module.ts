@@ -6,12 +6,12 @@ import { AppComponent } from "./app.component";
 import { BoardComponent } from "./board/board.component";
 import { MenuComponent } from "./menu/menu.component";
 import { WebsocketService } from "./_services/websocket.service";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { WaitingDialogComponent } from "./dialogs/waiting-dialog/waiting-dialog.component";
 import { EndDialogComponent } from "./dialogs/end-dialog/end-dialog.component";
 import { NgBootstrapAlertModule } from "ng-bootstrap-alert";
-import { ShipSunkComponent } from './dialogs/ship-sunk/ship-sunk.component';
+import { ShipSunkComponent } from "./dialogs/ship-sunk/ship-sunk.component";
 
 @NgModule({
   declarations: [
@@ -30,7 +30,7 @@ import { ShipSunkComponent } from './dialogs/ship-sunk/ship-sunk.component';
     NgBootstrapAlertModule,
   ],
   entryComponents: [WaitingDialogComponent],
-  providers: [WebsocketService],
+  providers: [WebsocketService, { provide: MatDialogRef, useValue: {} }],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

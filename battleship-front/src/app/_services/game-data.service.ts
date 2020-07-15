@@ -26,9 +26,7 @@ export interface IGameState {
   gameReady: boolean;
   waitingForEnemy: boolean;
   shipList?: IShip[];
-  // shipPartsAvailable?: number;
-  // isPlacingShip?: boolean;
-  // usedFields?: number[][];
+
   boards?: IBoardState;
   sunkFields?: number[][];
 }
@@ -43,15 +41,11 @@ export class GameDataService {
 
   constructor() {
     this.initService();
-    // console.log("Initialize gameDataService");
-    // console.log(this.menuComponentState);
-    // console.log(this.boardComponentState);
-    // console.log(this.boardState);
+
     if (sessionStorage.getItem("menuState") !== null) {
       this.menuComponentState = JSON.parse(
         sessionStorage.getItem("menuState")
       ) as IMenuState;
-      // console.log(sessionStorage.getItem("menuState"));
     }
     if (sessionStorage.getItem("boardCompState") !== null) {
       this.boardComponentState = JSON.parse(
@@ -92,10 +86,7 @@ export class GameDataService {
         this.boardState.yourBoard[i][j] = -1;
       }
     }
-    // console.log(this.boardState);
   }
-
-  // Reset service data after end/leave game
 
   public resetService() {
     this.initService();
@@ -107,6 +98,7 @@ export class GameDataService {
   public resetMenu() {
     sessionStorage.removeItem("menuState");
   }
+
   // Menu Component State
 
   public setChooseGame(chooseGame: boolean) {
@@ -202,15 +194,10 @@ export class GameDataService {
     torpedo: number,
     turn: boolean
   ) {
-    // console.log("board " + board);
-    // console.log("pos " + pos);
-    // console.log("torpedo " + torpedo);
-    // console.log("turn " + turn);
-    // console.log(this.boardState);
     switch (board) {
       case 0: {
         this.boardState.yourBoard[pos[0]][pos[1]] = torpedo;
-        // console.log(this.boardState.yourBoard);
+
         break;
       }
       case 1: {

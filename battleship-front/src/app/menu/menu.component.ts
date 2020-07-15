@@ -49,13 +49,11 @@ export class MenuComponent implements OnInit {
     this.loadData();
     this.wsConnection = this.websocketConn.connect(environment.wsEndpoint);
     this.wsConnection.subscribe((msg) => {
-      console.log(msg);
       const reader = new FileReader();
       reader.onloadend = (e) => {
         let text = reader.result as string;
         const object = JSON.parse(text);
         this.parseMsg(object);
-        console.log(object);
       };
 
       reader.readAsText(msg.data);
@@ -98,12 +96,10 @@ export class MenuComponent implements OnInit {
       }
       case "playerId": {
         const connId = this.websocketConn.getConnId();
-        console.log(connId);
         if (connId !== 0) {
           if (msg["playerId"] !== connId) {
             const newMsg = this.createMessage("playerId", connId);
             this.wsConnection.next(newMsg);
-            console.log(msg["playerId"]);
           }
         } else {
           this.websocketConn.setConnId(msg["playerId"]);
@@ -116,7 +112,6 @@ export class MenuComponent implements OnInit {
   startGame() {
     this.chooseGame = true;
     this.gameSession.setChooseGame(this.chooseGame);
-    console.log(this.playerId);
   }
 
   createNewGame() {
@@ -134,7 +129,6 @@ export class MenuComponent implements OnInit {
     this.gameId = parseInt(this.gameIdInput.nativeElement.value, 10);
     const msg = this.createMessage("joinGame");
     if (msg.gameId >= 100000 && msg.gameId <= 999999) {
-      console.log(msg);
       this.gameSession.setGameId(this.gameId);
       this.wsConnection.next(msg);
     } else {
@@ -168,10 +162,4 @@ export class MenuComponent implements OnInit {
     }
     return msg;
   }
-
-  // TODO: Validation function
-  // validateGameId() {
-  //   const testGameId = this.gameIdInput.nativeElement.value
-
-  // }
 }
