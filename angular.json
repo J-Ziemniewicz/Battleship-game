@@ -123,6 +123,10 @@
           }
         }
       }
-    }},
-  "defaultProject": "battleship-front"
+    }
+  },
+  "defaultProject": "battleship-front",
+  "cli": {
+    "analytics": false
+  }
 }
