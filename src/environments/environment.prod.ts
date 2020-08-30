@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  wsEndpoint: "ws://battleship-api-fokz.herokuapp.com/ws",
+  wsEndpoint: "ws://localhost:8888/ws",
   reconnectInterval: 2000,
 };
