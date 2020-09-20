@@ -107,10 +107,10 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  @HostListener("window:beforeunload", ["$event"])
-  beforeunloadHandler(event) {
-    this.exitGame();
-  }
+  // @HostListener("window:beforeunload", ["$event"])
+  // beforeunloadHandler(event) {
+  //   this.exitGame();
+  // }
 
   private loadGameState() {
     const gameState = this.gameSession.getGameState();
