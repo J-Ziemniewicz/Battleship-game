@@ -212,6 +212,14 @@ export class GameDataService {
     );
   }
 
+  public setTurn(yourTurn: boolean) {
+    this.boardState.yourTurn = yourTurn;
+    window.sessionStorage.setItem(
+      "boardState",
+      JSON.stringify(this.boardState)
+    );
+  }
+
   public getGameState() {
     if (this.boardComponentState.gameReady) {
       this.boardComponentState.boards = this.boardState;

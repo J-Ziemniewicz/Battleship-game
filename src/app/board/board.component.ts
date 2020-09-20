@@ -246,6 +246,7 @@ export class BoardComponent implements OnInit {
         this.changeTurn(msg["yourTurn"]);
         this.gameReady = true;
         this.gameSession.setGameReady(this.gameReady);
+        this.gameSession.setTurn(this.yourTurn);
         break;
       }
       case "gameEnd": {
